@@ -22,6 +22,7 @@ import { AppleAuthRequest } from '../requests/apple-auth.request';
 import { GoogleAuthRequest } from '../requests/google-auth.request';
 import { LogoutRequest } from '../requests/logout.request';
 import { RefreshRequest } from '../requests/refresh.request';
+import { GuestAuthRequest } from '../requests/guest-auth.request';
 
 @Public()
 @ApiTags('Auth')
@@ -102,7 +103,7 @@ export class AuthController {
     description: 'Too many requests. Limit: 10 per 15 min.',
   })
   loginWithGoogle(@Body() req: GoogleAuthRequest) {
-    return this.authUseCase.loginWithGoogle(req.idToken);
+    return this.authUseCase.loginWithGoogle(req.idToken, req.deviceId);
   }
 
   @Post('apple')
@@ -124,7 +125,7 @@ export class AuthController {
     description: 'Too many requests. Limit: 10 per 15 min.',
   })
   loginWithApple(@Body() req: AppleAuthRequest) {
-    return this.authUseCase.loginWithApple(req.identityToken, req.fullName);
+    return this.authUseCase.loginWithApple(req.identityToken, req.fullName, req.deviceId);
   }
 
   @Post('guest')
@@ -144,7 +145,7 @@ export class AuthController {
     status: 429,
     description: 'Too many requests. Limit: 10 per 15 min.',
   })
-  loginAsGuest() {
-    return this.authUseCase.loginAsGuest();
+  loginAsGuest(@Body() req: GuestAuthRequest) {
+    return this.authUseCase.loginAsGuest(req.deviceId);
   }
 }

@@ -28,6 +28,23 @@ export class UserTypeOrmRepository
     return this.repository.findOne({ where: { email } });
   }
 
+  findByGuestDeviceId(deviceId: string): Promise<UserEntity | null> {
+    return this.repository.findOne({ where: { guestDeviceId: deviceId } });
+  }
+
+  async deleteInactiveGuests(inactiveBefore: Date): Promise<number> {
+    const result = await this.repository
+      .createQueryBuilder()
+      .delete()
+      .where('email IS NULL')
+      .andWhere(
+        '(last_active_at IS NULL OR last_active_at < :cutoff)',
+        { cutoff: inactiveBefore },
+      )
+      .execute();
+    return result.affected ?? 0;
+  }
+
   async findByProviderUserId(
     providerId: string,
     providerUserId: string,

@@ -25,4 +25,11 @@ export class CatalogController {
   getXpLevels() {
     return this.catalogUseCase.listXpLevels();
   }
+
+  @Get('subscription-plans')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get all subscription plans' })
+  getSubscriptionPlans() {
+    return this.catalogUseCase.listSubscriptionPlans();
+  }
 }

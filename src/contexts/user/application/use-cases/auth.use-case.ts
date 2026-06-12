@@ -92,7 +92,7 @@ export class AuthUseCase implements IAuthUseCase {
     return { message: 'Logged out successfully' };
   }
 
-  async loginWithGoogle(idToken: string): Promise<AuthResult> {
+  async loginWithGoogle(idToken: string, deviceId?: string): Promise<AuthResult> {
     let socialData: Awaited<ReturnType<IGoogleAuthPort['verify']>>;
     try {
       socialData = await this.googleAuthPort.verify(idToken);
@@ -104,24 +104,26 @@ export class AuthUseCase implements IAuthUseCase {
       AUTH_PROVIDER_IDS.GOOGLE,
       socialData.providerId,
     );
+    if (user?.deletedAt) user = null;
 
     if (!user) {
       // Fall back to email lookup for users who registered before provider migration
       user = socialData.email
         ? await this.uow.users.findByEmail(socialData.email)
         : null;
+      if (user?.deletedAt) user = null;
     }
 
     if (!user) {
-      user = await this.uow.users.createWithProvider(
+      user = await this.createSocialUser(
         {
           email: socialData.email ?? null,
           name: socialData.fullName ?? null,
         },
         AUTH_PROVIDER_IDS.GOOGLE,
         socialData.providerId,
+        deviceId,
       );
-      await this.createUserStats(user.id);
     }
 
     return this.buildAuthResponse(user);
@@ -130,6 +132,7 @@ export class AuthUseCase implements IAuthUseCase {
   async loginWithApple(
     identityToken: string,
     fullName?: string,
+    deviceId?: string,
   ): Promise<AuthResult> {
     let socialData: Awaited<ReturnType<IAppleAuthPort['verify']>>;
     try {
@@ -142,37 +145,86 @@ export class AuthUseCase implements IAuthUseCase {
       AUTH_PROVIDER_IDS.APPLE,
       socialData.providerId,
     );
+    if (user?.deletedAt) user = null;
 
     if (!user) {
       // Fall back to email lookup for users who registered before provider migration
       user = socialData.email
         ? await this.uow.users.findByEmail(socialData.email)
         : null;
+      if (user?.deletedAt) user = null;
     }
 
     if (!user) {
-      user = await this.uow.users.createWithProvider(
+      user = await this.createSocialUser(
         {
           email: socialData.email ?? null,
           name: fullName ?? socialData.fullName ?? null,
         },
         AUTH_PROVIDER_IDS.APPLE,
         socialData.providerId,
+        deviceId,
       );
-      await this.createUserStats(user.id);
     }
 
     return this.buildAuthResponse(user);
   }
 
-  async loginAsGuest(): Promise<AuthResult> {
+  async loginAsGuest(deviceId?: string): Promise<AuthResult> {
+    if (deviceId) {
+      const existing = await this.uow.users.findByGuestDeviceId(deviceId);
+      if (existing) {
+        if (existing.deletedAt) {
+          await this.uow.users.update(existing.id, { deletedAt: null });
+        }
+        return this.buildAuthResponse(existing);
+      }
+    }
+    const trialUsed = await this.isDeviceTrialConsumed(deviceId);
     const user = await this.uow.users.create({
       name: null,
       email: null,
       avatarUrl: null,
+      guestDeviceId: deviceId ?? null,
+      deviceId: deviceId ?? null,
+      freeTrialUsed: trialUsed,
     });
     await this.createUserStats(user.id);
+    if (deviceId) {
+      await this.uow.deviceTrials.ensureDeviceRecord(deviceId, user.id);
+    }
     return this.buildAuthResponse(user);
+  }
+
+  private async createSocialUser(
+    userData: Partial<UserEntity>,
+    providerId: string,
+    providerUserId: string,
+    deviceId?: string,
+  ): Promise<UserEntity> {
+    const trialUsed = await this.isDeviceTrialConsumed(deviceId);
+    const user = await this.uow.users.createWithProvider(
+      {
+        ...userData,
+        deviceId: deviceId ?? null,
+        freeTrialUsed: trialUsed,
+      },
+      providerId,
+      providerUserId,
+    );
+    await this.createUserStats(user.id);
+    if (deviceId) {
+      await this.uow.deviceTrials.ensureDeviceRecord(deviceId, user.id);
+    }
+    return user;
+  }
+
+  private async isDeviceTrialConsumed(deviceId?: string): Promise<boolean> {
+    if (!deviceId) return false;
+    const freePlan = await this.uow.subscriptionPlans.findByCode('free');
+    if (!freePlan?.enforceDeviceTrialSlot) return false;
+    const record = await this.uow.deviceTrials.findByDeviceId(deviceId);
+    return record !== null;
   }
 
   async linkGoogle(userId: string, idToken: string): Promise<void> {

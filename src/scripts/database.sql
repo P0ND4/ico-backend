@@ -155,6 +155,48 @@ INSERT INTO con.xp_levels (level, label, min_xp, max_xp) VALUES
   (10, 'AutoLearner',   16000, 2147483647);
 
 
+-- Subscription plans
+CREATE TABLE con.subscription_plans (
+  code                  VARCHAR(50)  PRIMARY KEY,
+  label                 VARCHAR(100) NOT NULL,
+  price_monthly         NUMERIC(10,2),
+  price_annual          NUMERIC(10,2),
+  max_standard_paths    INTEGER,   -- NULL = ilimitado; 0 = deshabilitado
+  max_deep_paths        INTEGER,   -- NULL = ilimitado; 0 = deshabilitado
+  max_chapters          INTEGER,
+  max_lessons           INTEGER,
+  max_tutor_requests    INTEGER,   -- NULL = ilimitado; 0 = deshabilitado
+  max_summary_requests  INTEGER,   -- NULL = ilimitado; 0 = deshabilitado
+  ads_enabled           BOOLEAN NOT NULL DEFAULT TRUE,
+  is_default_free       BOOLEAN NOT NULL DEFAULT FALSE,
+  is_unlimited          BOOLEAN NOT NULL DEFAULT FALSE,
+  show_in_paywall             BOOLEAN NOT NULL DEFAULT FALSE,
+  sort_order                  INTEGER NOT NULL DEFAULT 0,
+  quota_reset_days            INTEGER,   -- NULL = cupos de por vida; N = renueva cada N días
+  quota_scope                 VARCHAR(10) NOT NULL DEFAULT 'device' CHECK (quota_scope IN ('device', 'user')),
+  enforce_device_trial_slot   BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+INSERT INTO con.subscription_plans (code, label, price_monthly, price_annual, max_standard_paths, max_deep_paths, max_chapters, max_lessons, max_tutor_requests, max_summary_requests, ads_enabled, is_default_free, is_unlimited, show_in_paywall, sort_order, quota_reset_days, quota_scope, enforce_device_trial_slot) VALUES
+  ('free',    'Gratuito',  NULL,  NULL,  2,    1,    2,    3,   5,    2,    TRUE,  TRUE,  FALSE, FALSE, 0, NULL, 'device', TRUE),
+  ('pro',     'Pro',       3.00,  30.00, 10,   5,    NULL, NULL, 50,   20,   FALSE, FALSE, FALSE, TRUE,  1, 15,   'user',   FALSE),
+  ('premium', 'Premium',   5.00,  50.00, NULL, NULL, NULL, NULL, NULL, NULL, FALSE, FALSE, TRUE,  TRUE,  2, NULL, 'user',   FALSE);
+
+-- Migración para bases existentes (ejecutar una sola vez si la tabla ya existía sin estas columnas):
+-- ALTER TABLE con.subscription_plans ADD COLUMN IF NOT EXISTS is_default_free BOOLEAN NOT NULL DEFAULT FALSE;
+-- ALTER TABLE con.subscription_plans ADD COLUMN IF NOT EXISTS is_unlimited BOOLEAN NOT NULL DEFAULT FALSE;
+-- ALTER TABLE con.subscription_plans ADD COLUMN IF NOT EXISTS show_in_paywall BOOLEAN NOT NULL DEFAULT FALSE;
+-- ALTER TABLE con.subscription_plans ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0;
+-- UPDATE con.subscription_plans SET is_default_free = TRUE, show_in_paywall = FALSE, sort_order = 0 WHERE code = 'free';
+-- UPDATE con.subscription_plans SET is_unlimited = TRUE, show_in_paywall = TRUE, sort_order = 2 WHERE code = 'premium';
+-- INSERT INTO con.subscription_plans (...) VALUES ('pro', ...) ON CONFLICT (code) DO NOTHING;
+-- ALTER TABLE con.subscription_plans ADD COLUMN IF NOT EXISTS quota_reset_days INTEGER;
+-- ALTER TABLE con.subscription_plans ADD COLUMN IF NOT EXISTS quota_scope VARCHAR(10) NOT NULL DEFAULT 'device';
+-- ALTER TABLE con.subscription_plans ADD COLUMN IF NOT EXISTS enforce_device_trial_slot BOOLEAN NOT NULL DEFAULT FALSE;
+-- UPDATE con.subscription_plans SET quota_reset_days = NULL, quota_scope = 'device', enforce_device_trial_slot = TRUE WHERE code = 'free';
+-- UPDATE con.subscription_plans SET quota_reset_days = 15, quota_scope = 'user', enforce_device_trial_slot = FALSE WHERE code = 'pro';
+-- ALTER TABLE trn.device_trials ADD COLUMN IF NOT EXISTS period_started_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
 -- Pomodoro Presets
 CREATE TABLE con.pomodoro_presets (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -199,6 +241,7 @@ CREATE TABLE trn.users (
   level          INTEGER      NOT NULL DEFAULT 1 REFERENCES con.xp_levels(level),
   streak_days    INTEGER      NOT NULL DEFAULT 0 CHECK (streak_days >= 0),
   last_active_at TIMESTAMPTZ,
+  plan_code      VARCHAR(50)  NOT NULL DEFAULT 'free' REFERENCES con.subscription_plans(code),
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
@@ -206,6 +249,28 @@ CREATE TABLE trn.users (
 CREATE TRIGGER trg_trn_users_updated_at
   BEFORE UPDATE ON trn.users
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- Device trial quotas (tutor, summaries, path generations per device)
+CREATE TABLE trn.device_trials (
+  device_id          VARCHAR(64) PRIMARY KEY,
+  user_id            UUID        NOT NULL REFERENCES trn.users(id) ON DELETE CASCADE,
+  used_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  tutor_uses         INTEGER     NOT NULL DEFAULT 0 CHECK (tutor_uses >= 0),
+  summary_uses       INTEGER     NOT NULL DEFAULT 0 CHECK (summary_uses >= 0),
+  standard_path_uses INTEGER     NOT NULL DEFAULT 0 CHECK (standard_path_uses >= 0),
+  deep_path_uses     INTEGER     NOT NULL DEFAULT 0 CHECK (deep_path_uses >= 0),
+  period_started_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Per-user quota counters (when plan quota_scope = 'user')
+CREATE TABLE trn.user_plan_quotas (
+  user_id            UUID        PRIMARY KEY REFERENCES trn.users(id) ON DELETE CASCADE,
+  tutor_uses         INTEGER     NOT NULL DEFAULT 0 CHECK (tutor_uses >= 0),
+  summary_uses       INTEGER     NOT NULL DEFAULT 0 CHECK (summary_uses >= 0),
+  standard_path_uses INTEGER     NOT NULL DEFAULT 0 CHECK (standard_path_uses >= 0),
+  deep_path_uses     INTEGER     NOT NULL DEFAULT 0 CHECK (deep_path_uses >= 0),
+  period_started_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 -- User stats 1:1
 CREATE TABLE trn.user_stats (
@@ -333,7 +398,7 @@ CREATE TRIGGER trg_trn_tutor_conversations_updated_at
   BEFORE UPDATE ON trn.tutor_conversations
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- Messages in the tutor conversation
+-- Messages in the tutor conversation (cascade delete keeps messages in sync with conversation)
 CREATE TABLE trn.tutor_messages (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID        NOT NULL REFERENCES trn.tutor_conversations(id) ON DELETE CASCADE,
@@ -358,7 +423,7 @@ CREATE TABLE trn.plan_tasks (
   id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id        UUID         NOT NULL REFERENCES trn.users(id) ON DELETE CASCADE,
   title          VARCHAR(255) NOT NULL,
-  scheduled_time TIME,
+  scheduled_time VARCHAR(50),
   scheduled_date DATE         NOT NULL,
   is_completed   BOOLEAN      NOT NULL DEFAULT FALSE,
   completed_at   TIMESTAMPTZ,

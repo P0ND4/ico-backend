@@ -9,6 +9,8 @@ export interface IAuthProviderRecord {
 
 export interface IUserRepository extends IBaseRepository<UserEntity, string> {
   findByEmail(email: string): Promise<UserEntity | null>;
+  findByGuestDeviceId(deviceId: string): Promise<UserEntity | null>;
+  deleteInactiveGuests(inactiveBefore: Date): Promise<number>;
   findByProviderUserId(
     providerId: string,
     providerUserId: string,

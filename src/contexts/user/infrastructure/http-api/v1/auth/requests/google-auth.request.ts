@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 
 export class GoogleAuthRequest {
   @ApiProperty({
@@ -8,4 +8,9 @@ export class GoogleAuthRequest {
   })
   @IsString()
   idToken!: string;
+
+  @ApiPropertyOptional({ description: 'Stable device identifier for trial abuse prevention' })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
 }

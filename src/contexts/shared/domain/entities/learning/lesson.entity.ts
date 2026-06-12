@@ -8,6 +8,7 @@ import {
   Unique,
 } from 'typeorm';
 import { ChapterEntity } from './chapter.entity';
+import { LessonTypeEntity } from '../catalog/lesson-type.entity';
 
 @Entity({ schema: 'trn', name: 'lessons' })
 @Unique(['chapterId', 'order'])
@@ -18,12 +19,16 @@ export class LessonEntity {
   @Column({ type: 'uuid', name: 'chapter_id' })
   chapterId!: string;
 
-  @ManyToOne(() => ChapterEntity)
+  @ManyToOne(() => ChapterEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'chapter_id' })
   chapter!: ChapterEntity;
 
   @Column({ type: 'varchar', length: 50 })
   type!: string;
+
+  @ManyToOne(() => LessonTypeEntity, { eager: false })
+  @JoinColumn({ name: 'type', referencedColumnName: 'code' })
+  lessonType!: LessonTypeEntity;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   title!: string | null;

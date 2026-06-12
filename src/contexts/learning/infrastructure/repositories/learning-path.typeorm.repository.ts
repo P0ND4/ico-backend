@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { LearningPathEntity } from 'src/contexts/shared/domain/entities/learning/learning-path.entity';
 import { ILearningPathRepository } from '../../domain/ports/learning-path.repository.port';
 
@@ -14,6 +14,10 @@ export class LearningPathTypeOrmRepository implements ILearningPathRepository {
     userId: string,
   ): Promise<LearningPathEntity | null> {
     return this.repo.findOne({ where: { id, userId } });
+  }
+
+  countActiveByUserId(userId: string): Promise<number> {
+    return this.repo.count({ where: { userId, status: Not('archived') } });
   }
 
   async create(data: Partial<LearningPathEntity>): Promise<LearningPathEntity> {

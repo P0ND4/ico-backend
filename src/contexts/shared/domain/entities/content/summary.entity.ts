@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { UserEntity } from '../auth/user.entity';
+import { SourceTypeEntity } from '../catalog/source-type.entity';
 
 @Entity({ schema: 'trn', name: 'summaries' })
 export class SummaryEntity {
@@ -16,7 +17,7 @@ export class SummaryEntity {
   @Column({ type: 'uuid', name: 'user_id' })
   userId!: string;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: UserEntity;
 
@@ -36,6 +37,10 @@ export class SummaryEntity {
 
   @Column({ type: 'varchar', length: 50, name: 'source_type', nullable: true })
   sourceType!: string | null;
+
+  @ManyToOne(() => SourceTypeEntity, { eager: false, nullable: true })
+  @JoinColumn({ name: 'source_type', referencedColumnName: 'code' })
+  sourceTypeRef!: SourceTypeEntity | null;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt!: Date;

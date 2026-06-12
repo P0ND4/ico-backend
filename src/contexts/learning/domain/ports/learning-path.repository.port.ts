@@ -6,6 +6,7 @@ export interface ILearningPathRepository {
     id: string,
     userId: string,
   ): Promise<LearningPathEntity | null>;
+  countActiveByUserId(userId: string): Promise<number>;
   create(data: Partial<LearningPathEntity>): Promise<LearningPathEntity>;
   update(
     id: string,

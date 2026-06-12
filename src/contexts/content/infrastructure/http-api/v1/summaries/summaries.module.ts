@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { SummaryEntity } from 'src/contexts/shared/domain/entities/content/summary.entity';
+import { SharedModule } from 'src/contexts/shared/shared.module';
 import { CONTENT_UNIT_OF_WORK } from 'src/contexts/content/domain/unit-of-work.interface';
 import { AI_SUMMARIZER } from 'src/contexts/content/domain/ports/ai-summarizer.port';
 import { FILE_EXTRACTOR } from 'src/contexts/content/domain/ports/file-extractor.port';
@@ -15,7 +16,7 @@ import { SummaryUseCase } from 'src/contexts/content/application/use-cases/summa
 import { SummariesController } from './controllers/summaries.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SummaryEntity]), ConfigModule],
+  imports: [TypeOrmModule.forFeature([SummaryEntity]), ConfigModule, SharedModule],
   controllers: [SummariesController],
   providers: [
     {

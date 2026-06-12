@@ -66,6 +66,7 @@ export class UsersController {
     return this.userProfileUseCase.updateMe(req.user.sub, {
       name: body.name,
       avatarUrl: body.avatarUrl,
+      themeMode: body.themeMode,
     });
   }
 

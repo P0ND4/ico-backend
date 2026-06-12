@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { IAiSummarizer } from '../../domain/ports/ai-summarizer.port';
+import { AI_MARKDOWN_FORMATTING_BRIEF } from 'src/contexts/shared/constants/ai-markdown-formatting';
 
 @Injectable()
 export class DeepseekSummarizerService implements IAiSummarizer {
@@ -26,7 +27,7 @@ export class DeepseekSummarizerService implements IAiSummarizer {
         {
           role: 'system',
           content:
-            'You are an expert at creating critical, structured summaries. Generate a comprehensive summary that captures the key ideas, arguments, and conclusions. Respond in the same language as the input text.',
+            `You are an expert at creating critical, structured summaries. Generate a comprehensive summary that captures the key ideas, arguments, and conclusions. Respond in the same language as the input text.\n\n${AI_MARKDOWN_FORMATTING_BRIEF}`,
         },
         {
           role: 'user',

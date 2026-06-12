@@ -9,6 +9,12 @@ import type {
 } from '../../domain/contracts/i-message.use-case';
 import { TutorMessageEntity } from 'src/contexts/shared/domain/entities/tutor/tutor-message.entity';
 import { ConversationNotFoundError } from '../../domain/errors/conversation-not-found.error';
+import { UNIT_OF_WORK } from 'src/contexts/shared/domain/repositories/unit-of-work.interface';
+import type { IUnitOfWork } from 'src/contexts/shared/domain/repositories/unit-of-work.interface';
+import {
+  assertFeatureWithTrial,
+  consumeTrialFeature,
+} from 'src/contexts/shared/domain/utils/trial-usage.helper';
 
 @Injectable()
 export class MessageUseCase implements IMessageUseCase {
@@ -17,6 +23,8 @@ export class MessageUseCase implements IMessageUseCase {
     private readonly uow: ITutorUnitOfWork,
     @Inject(AI_TUTOR)
     private readonly aiTutor: IAiTutor,
+    @Inject(UNIT_OF_WORK)
+    private readonly sharedUow: IUnitOfWork,
   ) {}
 
   async list(
@@ -32,6 +40,11 @@ export class MessageUseCase implements IMessageUseCase {
   }
 
   async send(params: SendMessageParams): Promise<TutorMessageEntity> {
+    const user = await this.sharedUow.users.findById(params.userId);
+    if (user) {
+      await assertFeatureWithTrial(this.sharedUow, user, 'tutor');
+    }
+
     const conversation = await this.uow.conversations.findByIdAndUserId(
       params.conversationId,
       params.userId,
@@ -53,7 +66,12 @@ export class MessageUseCase implements IMessageUseCase {
       content: params.content,
     });
 
-    const aiResponse = await this.aiTutor.chat(history, params.content);
+    const [aiResponse, title] = await Promise.all([
+      this.aiTutor.chat(history, params.content),
+      existingMessages.length === 0
+        ? this.aiTutor.generateTitle(params.content)
+        : Promise.resolve(null),
+    ]);
 
     const modelMessage = await this.uow.messages.create({
       conversationId: params.conversationId,
@@ -61,7 +79,11 @@ export class MessageUseCase implements IMessageUseCase {
       content: aiResponse,
     });
 
-    await this.uow.conversations.update(params.conversationId, {});
+    await this.uow.conversations.update(params.conversationId, title ? { title } : {});
+
+    if (user) {
+      await consumeTrialFeature(this.sharedUow, user, 'tutor');
+    }
 
     return modelMessage;
   }

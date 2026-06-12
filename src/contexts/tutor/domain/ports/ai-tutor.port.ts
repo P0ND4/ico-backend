@@ -7,4 +7,5 @@ export interface ChatMessage {
 
 export interface IAiTutor {
   chat(history: ChatMessage[], userMessage: string): Promise<string>;
+  generateTitle(firstMessage: string): Promise<string>;
 }

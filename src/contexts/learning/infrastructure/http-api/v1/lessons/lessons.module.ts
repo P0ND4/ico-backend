@@ -9,6 +9,7 @@ import { UserEntity } from 'src/contexts/shared/domain/entities/auth/user.entity
 import { UserAuthProviderEntity } from 'src/contexts/shared/domain/entities/auth/user-auth-provider.entity';
 import { UserStatsEntity } from 'src/contexts/shared/domain/entities/auth/user-stats.entity';
 import { XpLevelEntity } from 'src/contexts/shared/domain/entities/config/xp-level.entity';
+import { SubscriptionPlanEntity } from 'src/contexts/shared/domain/entities/config/subscription-plan.entity';
 import { LEARNING_UNIT_OF_WORK } from 'src/contexts/learning/domain/unit-of-work.interface';
 import { LESSON_USE_CASE } from 'src/contexts/learning/domain/contracts/i-lesson.use-case';
 import { TypeOrmLearningUnitOfWork } from 'src/contexts/learning/infrastructure/uow/typeorm-learning-unit-of-work';
@@ -27,6 +28,7 @@ import { LessonsController } from './controllers/lessons.controller';
       UserAuthProviderEntity,
       UserStatsEntity,
       XpLevelEntity,
+      SubscriptionPlanEntity,
     ]),
   ],
   controllers: [LessonsController],

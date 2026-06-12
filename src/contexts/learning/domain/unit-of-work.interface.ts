@@ -6,6 +6,7 @@ import type { IPathGenerationJobRepository } from './ports/path-generation-job.r
 import type { IUserRepository } from 'src/contexts/shared/domain/repositories/auth/user.repository.interface';
 import type { IUserStatsRepository } from 'src/contexts/shared/domain/repositories/auth/user-stats.repository.interface';
 import type { IXpLevelRepository } from 'src/contexts/shared/domain/repositories/config/xp-level.repository.interface';
+import type { ISubscriptionPlanRepository } from 'src/contexts/shared/domain/repositories/config/subscription-plan.repository.interface';
 
 export const LEARNING_UNIT_OF_WORK = 'LEARNING_UNIT_OF_WORK';
 
@@ -18,5 +19,6 @@ export interface ILearningUnitOfWork {
   readonly users: IUserRepository;
   readonly userStats: IUserStatsRepository;
   readonly xpLevels: IXpLevelRepository;
+  readonly subscriptionPlans: ISubscriptionPlanRepository;
   withTransaction<R>(fn: (uow: ILearningUnitOfWork) => Promise<R>): Promise<R>;
 }

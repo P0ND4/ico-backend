@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { TutorConversationEntity } from 'src/contexts/shared/domain/entities/tutor/tutor-conversation.entity';
 import { TutorMessageEntity } from 'src/contexts/shared/domain/entities/tutor/tutor-message.entity';
+import { SharedModule } from 'src/contexts/shared/shared.module';
 import { TUTOR_UNIT_OF_WORK } from 'src/contexts/tutor/domain/unit-of-work.interface';
 import { AI_TUTOR } from 'src/contexts/tutor/domain/ports/ai-tutor.port';
 import { TUTOR_PDF_EXPORT_SERVICE } from 'src/contexts/tutor/domain/ports/pdf-export.port';
@@ -19,6 +20,7 @@ import { TutorConversationsController } from './controllers/tutor-conversations.
   imports: [
     TypeOrmModule.forFeature([TutorConversationEntity, TutorMessageEntity]),
     ConfigModule,
+    SharedModule,
   ],
   controllers: [TutorConversationsController],
   providers: [

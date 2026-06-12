@@ -10,7 +10,7 @@ export class PathTagEntity {
   @PrimaryColumn({ type: 'uuid', name: 'tag_id' })
   tagId!: string;
 
-  @ManyToOne(() => LearningPathEntity)
+  @ManyToOne(() => LearningPathEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'path_id' })
   path!: LearningPathEntity;
 

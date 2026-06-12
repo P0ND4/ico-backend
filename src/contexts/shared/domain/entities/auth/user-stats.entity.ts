@@ -16,7 +16,7 @@ export class UserStatsEntity {
   @Column({ type: 'uuid', name: 'user_id' })
   userId!: string;
 
-  @OneToOne(() => UserEntity)
+  @OneToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: UserEntity;
 

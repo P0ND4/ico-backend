@@ -1,4 +1,4 @@
-import { IsBoolean, IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateTaskRequest {
   @IsOptional()
@@ -11,6 +11,7 @@ export class UpdateTaskRequest {
 
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   scheduledTime?: string;
 
   @IsOptional()

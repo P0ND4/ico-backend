@@ -20,9 +20,9 @@ export interface IAuthUseCase {
     accessToken: string,
     refreshToken?: string,
   ): Promise<{ message: string }>;
-  loginWithGoogle(idToken: string): Promise<AuthResult>;
-  loginWithApple(identityToken: string, fullName?: string): Promise<AuthResult>;
-  loginAsGuest(): Promise<AuthResult>;
+  loginWithGoogle(idToken: string, deviceId?: string): Promise<AuthResult>;
+  loginWithApple(identityToken: string, fullName?: string, deviceId?: string): Promise<AuthResult>;
+  loginAsGuest(deviceId?: string): Promise<AuthResult>;
   linkGoogle(userId: string, idToken: string): Promise<void>;
   linkApple(
     userId: string,

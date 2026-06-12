@@ -16,7 +16,10 @@ import { TutorModule } from 'src/contexts/tutor/infrastructure/main.module';
 import { ContentModule } from 'src/contexts/content/infrastructure/main.module';
 import { PlanningModule } from 'src/contexts/planning/infrastructure/main.module';
 import { CatalogContextModule } from 'src/contexts/catalog/infrastructure/main.module';
+import { ScheduleModule } from '@nestjs/schedule';
 import { RedisModule } from 'src/database/redis.module';
+import { SeederService } from 'src/app/seeds/seeder.service';
+import { CleanupService } from 'src/app/cleanup/cleanup.service';
 
 @Module({
   imports: [
@@ -49,8 +52,11 @@ import { RedisModule } from 'src/database/redis.module';
     ContentModule,
     PlanningModule,
     CatalogContextModule,
+    ScheduleModule.forRoot(),
   ],
   providers: [
+    SeederService,
+    CleanupService,
     { provide: APP_FILTER, useClass: DomainExceptionFilter },
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },
     { provide: APP_GUARD, useClass: ThrottlerGuard },

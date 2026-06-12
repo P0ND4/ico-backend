@@ -22,4 +22,8 @@ export class UserStatsTypeOrmRepository implements IUserStatsRepository {
   create(data: Partial<UserStatsEntity>): Promise<UserStatsEntity> {
     return this.repo.save(this.repo.create(data));
   }
+
+  async deleteByUserId(userId: string): Promise<void> {
+    await this.repo.delete({ userId });
+  }
 }

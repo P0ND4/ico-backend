@@ -10,6 +10,8 @@ import { UserEntity } from 'src/contexts/shared/domain/entities/auth/user.entity
 import { UserAuthProviderEntity } from 'src/contexts/shared/domain/entities/auth/user-auth-provider.entity';
 import { UserStatsEntity } from 'src/contexts/shared/domain/entities/auth/user-stats.entity';
 import { XpLevelEntity } from 'src/contexts/shared/domain/entities/config/xp-level.entity';
+import { SubscriptionPlanEntity } from 'src/contexts/shared/domain/entities/config/subscription-plan.entity';
+import { SharedModule } from 'src/contexts/shared/shared.module';
 import { LEARNING_UNIT_OF_WORK } from 'src/contexts/learning/domain/unit-of-work.interface';
 import { AI_PATH_GENERATOR } from 'src/contexts/learning/domain/ports/ai-path-generator.port';
 import { PATH_USE_CASE } from 'src/contexts/learning/domain/contracts/i-path.use-case';
@@ -30,8 +32,10 @@ import { PathsController } from './controllers/paths.controller';
       UserAuthProviderEntity,
       UserStatsEntity,
       XpLevelEntity,
+      SubscriptionPlanEntity,
     ]),
     ConfigModule,
+    SharedModule,
   ],
   controllers: [PathsController],
   providers: [

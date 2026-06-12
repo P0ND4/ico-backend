@@ -16,14 +16,14 @@ export class PlanTaskEntity extends BaseEntity {
   @Column({ type: 'uuid', name: 'user_id' })
   userId!: string;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: UserEntity;
 
   @Column({ type: 'varchar', length: 255 })
   title!: string;
 
-  @Column({ type: 'time', name: 'scheduled_time', nullable: true })
+  @Column({ type: 'varchar', length: 50, name: 'scheduled_time', nullable: true })
   scheduledTime!: string | null;
 
   @Column({ type: 'date', name: 'scheduled_date' })

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TagEntity } from 'src/contexts/shared/domain/entities/catalog/tag.entity';
 import { XpLevelEntity } from 'src/contexts/shared/domain/entities/config/xp-level.entity';
+import { SubscriptionPlanEntity } from 'src/contexts/shared/domain/entities/config/subscription-plan.entity';
 import { CATALOG_UNIT_OF_WORK } from 'src/contexts/catalog/domain/unit-of-work.interface';
 import { CATALOG_USE_CASE } from 'src/contexts/catalog/domain/contracts/i-catalog.use-case';
 import { TypeOrmCatalogUnitOfWork } from '../../uow/typeorm-catalog-unit-of-work';
@@ -9,7 +10,7 @@ import { CatalogUseCase } from 'src/contexts/catalog/application/use-cases/catal
 import { CatalogController } from './catalog/controllers/catalog.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TagEntity, XpLevelEntity])],
+  imports: [TypeOrmModule.forFeature([TagEntity, XpLevelEntity, SubscriptionPlanEntity])],
   controllers: [CatalogController],
   providers: [
     {

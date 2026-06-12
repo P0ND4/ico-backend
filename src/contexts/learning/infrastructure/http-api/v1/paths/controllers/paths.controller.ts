@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Request,
+  Sse,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -22,6 +23,7 @@ import { PATH_USE_CASE } from 'src/contexts/learning/domain/contracts/i-path.use
 import type { IPathUseCase } from 'src/contexts/learning/domain/contracts/i-path.use-case';
 import { GeneratePathRequest } from '../requests/generate-path.request';
 import { UpdatePathRequest } from '../requests/update-path.request';
+import { AskTutorRequest } from '../requests/ask-tutor.request';
 import { PathListItemDto } from 'src/contexts/learning/application/dtos/path-list-item.dto';
 import { PathDetailDto } from 'src/contexts/learning/application/dtos/path-detail.dto';
 import { JobStatusDto } from 'src/contexts/learning/application/dtos/job-status.dto';
@@ -69,6 +71,15 @@ export class PathsController {
     return this.pathUseCase.getJobStatus(jobId, req.user.sub);
   }
 
+  @Sse('jobs/:jobId/stream')
+  @ApiOperation({ summary: 'Stream job progress via SSE' })
+  async streamJobStatus(
+    @Request() req: { user: JwtPayload },
+    @Param('jobId') jobId: string,
+  ) {
+    return this.pathUseCase.watchJob(jobId, req.user.sub);
+  }
+
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get a learning path by ID' })
@@ -101,5 +112,22 @@ export class PathsController {
   @ApiResponse({ status: 204 })
   deletePath(@Request() req: { user: JwtPayload }, @Param('id') id: string) {
     return this.pathUseCase.delete(id, req.user.sub);
+  }
+
+  @Post(':pathId/tutor')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Ask the AI tutor about a learning path chapter' })
+  @ApiResponse({ status: 200 })
+  askTutor(
+    @Request() req: { user: JwtPayload },
+    @Param('pathId') pathId: string,
+    @Body() body: AskTutorRequest,
+  ) {
+    return this.pathUseCase.askTutor({
+      pathId,
+      userId: req.user.sub,
+      question: body.question,
+      chapterContext: body.chapterContext,
+    });
   }
 }

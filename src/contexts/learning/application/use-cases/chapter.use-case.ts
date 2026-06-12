@@ -1,4 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { LEARNING_UNIT_OF_WORK } from '../../domain/unit-of-work.interface';
 import type { ILearningUnitOfWork } from '../../domain/unit-of-work.interface';
 import type {
@@ -10,16 +12,20 @@ import { ChapterDetailDto } from '../dtos/chapter-detail.dto';
 import { LessonDto } from '../dtos/lesson.dto';
 import { ChapterNotFoundError } from '../../domain/errors/chapter-not-found.error';
 import { ChapterLockedError } from '../../domain/errors/chapter-locked.error';
+import { ExamNotPassedError } from '../../domain/errors/exam-not-passed.error';
 import { PathNotFoundError } from '../../domain/errors/path-not-found.error';
 import { UserNotFoundError } from 'src/contexts/user/domain/errors/auth/user-not-found.error';
 import { ChapterEntity } from 'src/contexts/shared/domain/entities/learning/chapter.entity';
 import { LessonEntity } from 'src/contexts/shared/domain/entities/learning/lesson.entity';
+import { ExamResultEntity } from 'src/contexts/shared/domain/entities/learning/exam-result.entity';
 
 @Injectable()
 export class ChapterUseCase implements IChapterUseCase {
   constructor(
     @Inject(LEARNING_UNIT_OF_WORK)
     private readonly uow: ILearningUnitOfWork,
+    @InjectRepository(ExamResultEntity)
+    private readonly examResults: Repository<ExamResultEntity>,
   ) {}
 
   async get(
@@ -63,8 +69,19 @@ export class ChapterUseCase implements IChapterUseCase {
     );
     if (!chapter) throw new ChapterNotFoundError();
 
-    // 3. Check chapter is not locked
+    // 3. Check chapter is not locked / not already completed
     if (chapter.status === 'locked') throw new ChapterLockedError();
+    if (chapter.status === 'completed') {
+      return { chapter, nextChapterUnlocked: false, pathCompleted: false };
+    }
+
+    // 3b. Exam chapters require a passing exam result
+    if (chapter.isExam) {
+      const examResult = await this.examResults.findOne({
+        where: { userId, chapterId, passed: true },
+      });
+      if (!examResult) throw new ExamNotPassedError();
+    }
 
     // 4. Mark chapter as completed
     const updatedChapter = await this.uow.chapters.update(chapterId, {
@@ -113,6 +130,25 @@ export class ChapterUseCase implements IChapterUseCase {
     await this.uow.users.update(userId, {
       xp: newXp,
       ...(levelRecord ? { level: levelRecord.level } : {}),
+    });
+
+    // 7b. Update streak
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt) : null;
+    if (lastActive) lastActive.setHours(0, 0, 0, 0);
+    const diffDays = lastActive
+      ? Math.round((today.getTime() - lastActive.getTime()) / 86400000)
+      : null;
+    const newStreak =
+      diffDays === 0
+        ? user.streakDays
+        : diffDays === 1
+          ? user.streakDays + 1
+          : 1;
+    await this.uow.users.update(userId, {
+      streakDays: newStreak,
+      lastActiveAt: new Date(),
     });
 
     // 8. Upsert UserStats

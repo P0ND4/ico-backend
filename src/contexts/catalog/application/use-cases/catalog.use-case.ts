@@ -19,4 +19,8 @@ export class CatalogUseCase implements ICatalogUseCase {
   listXpLevels(): Promise<XpLevelEntity[]> {
     return this.uow.xpLevels.findAll();
   }
+
+  listSubscriptionPlans() {
+    return this.uow.subscriptionPlans.findAll();
+  }
 }

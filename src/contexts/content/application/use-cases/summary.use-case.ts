@@ -15,7 +15,14 @@ import type {
   ExportSummaryResult,
 } from '../../domain/contracts/i-summary.use-case';
 import type { SummaryEntity } from 'src/contexts/shared/domain/entities/content/summary.entity';
+import type { UserEntity } from 'src/contexts/shared/domain/entities/auth/user.entity';
 import { SummaryNotFoundError } from '../../domain/errors/summary-not-found.error';
+import { UNIT_OF_WORK } from 'src/contexts/shared/domain/repositories/unit-of-work.interface';
+import type { IUnitOfWork } from 'src/contexts/shared/domain/repositories/unit-of-work.interface';
+import {
+  assertFeatureWithTrial,
+  consumeTrialFeature,
+} from 'src/contexts/shared/domain/utils/trial-usage.helper';
 
 @Injectable()
 export class SummaryUseCase implements ISummaryUseCase {
@@ -28,6 +35,8 @@ export class SummaryUseCase implements ISummaryUseCase {
     private readonly fileExtractor: IFileExtractor,
     @Inject(CONTENT_PDF_EXPORT_SERVICE)
     private readonly pdfExport: IContentPdfExportService,
+    @Inject(UNIT_OF_WORK)
+    private readonly sharedUow: IUnitOfWork,
   ) {}
 
   list(userId: string): Promise<SummaryEntity[]> {
@@ -35,18 +44,22 @@ export class SummaryUseCase implements ISummaryUseCase {
   }
 
   async generate(params: GenerateSummaryParams): Promise<SummaryEntity> {
+    const user = await this.checkSummaryPlan(params.userId);
     const summaryText = await this.aiSummarizer.summarize(params.text);
-    return this.uow.summaries.create({
+    const summary = await this.uow.summaries.create({
       userId: params.userId,
       originalText: params.text,
       summaryText,
       sourceType: 'text',
     });
+    await this.consumeSummaryTrial(user);
+    return summary;
   }
 
   async uploadAndSummarize(
     params: UploadAndSummarizeParams,
   ): Promise<SummaryEntity> {
+    const user = await this.checkSummaryPlan(params.userId);
     const extractedText = await this.fileExtractor.extract(
       params.buffer,
       params.mimeType,
@@ -58,13 +71,15 @@ export class SummaryUseCase implements ISummaryUseCase {
     const ext = params.originalname.split('.').pop()?.toLowerCase();
     const sourceType = ext === 'pdf' ? 'pdf' : ext === 'docx' ? 'docx' : 'txt';
 
-    return this.uow.summaries.create({
+    const summary = await this.uow.summaries.create({
       userId: params.userId,
       originalText: extractedText,
       summaryText,
       sourceFilename: params.originalname,
       sourceType,
     });
+    await this.consumeSummaryTrial(user);
+    return summary;
   }
 
   async get(id: string, userId: string): Promise<SummaryEntity> {
@@ -96,8 +111,9 @@ export class SummaryUseCase implements ISummaryUseCase {
     }
 
     if (params.format === 'docx') {
+      const buffer = await this.pdfExport.generateSummaryDocx(summary);
       return {
-        buffer: Buffer.from(summary.summaryText, 'utf-8'),
+        buffer,
         mimeType:
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         filename: `summary-${params.summaryId}.docx`,
@@ -105,9 +121,23 @@ export class SummaryUseCase implements ISummaryUseCase {
     }
 
     return {
-      buffer: Buffer.from(summary.summaryText, 'utf-8'),
+      buffer: Buffer.from(this.pdfExport.generateSummaryTxt(summary), 'utf-8'),
       mimeType: 'text/plain',
       filename: `summary-${params.summaryId}.txt`,
     };
+  }
+
+  private async checkSummaryPlan(userId: string): Promise<UserEntity | null> {
+    const user = await this.sharedUow.users.findById(userId);
+    if (user) {
+      await assertFeatureWithTrial(this.sharedUow, user, 'summary');
+    }
+    return user;
+  }
+
+  private async consumeSummaryTrial(user: UserEntity | null): Promise<void> {
+    if (user) {
+      await consumeTrialFeature(this.sharedUow, user, 'summary');
+    }
   }
 }

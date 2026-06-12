@@ -10,6 +10,7 @@ import { UserEntity } from 'src/contexts/shared/domain/entities/auth/user.entity
 import { UserAuthProviderEntity } from 'src/contexts/shared/domain/entities/auth/user-auth-provider.entity';
 import { UserStatsEntity } from 'src/contexts/shared/domain/entities/auth/user-stats.entity';
 import { XpLevelEntity } from 'src/contexts/shared/domain/entities/config/xp-level.entity';
+import { SubscriptionPlanEntity } from 'src/contexts/shared/domain/entities/config/subscription-plan.entity';
 import { LearningPathTypeOrmRepository } from '../repositories/learning-path.typeorm.repository';
 import { ChapterTypeOrmRepository } from '../repositories/chapter.typeorm.repository';
 import { LessonTypeOrmRepository } from '../repositories/lesson.typeorm.repository';
@@ -18,6 +19,7 @@ import { PathGenerationJobTypeOrmRepository } from '../repositories/path-generat
 import { UserTypeOrmRepository } from 'src/contexts/shared/infrastructure/repositories/auth/user.typeorm.repository';
 import { UserStatsTypeOrmRepository } from 'src/contexts/shared/infrastructure/repositories/auth/user-stats.typeorm.repository';
 import { XpLevelTypeOrmRepository } from 'src/contexts/shared/infrastructure/repositories/config/xp-level.typeorm.repository';
+import { SubscriptionPlanTypeOrmRepository } from 'src/contexts/shared/infrastructure/repositories/config/subscription-plan.typeorm.repository';
 import type { ILearningUnitOfWork } from '../../domain/unit-of-work.interface';
 import type { ILearningPathRepository } from '../../domain/ports/learning-path.repository.port';
 import type { IChapterRepository } from '../../domain/ports/chapter.repository.port';
@@ -27,6 +29,7 @@ import type { IPathGenerationJobRepository } from '../../domain/ports/path-gener
 import type { IUserRepository } from 'src/contexts/shared/domain/repositories/auth/user.repository.interface';
 import type { IUserStatsRepository } from 'src/contexts/shared/domain/repositories/auth/user-stats.repository.interface';
 import type { IXpLevelRepository } from 'src/contexts/shared/domain/repositories/config/xp-level.repository.interface';
+import type { ISubscriptionPlanRepository } from 'src/contexts/shared/domain/repositories/config/subscription-plan.repository.interface';
 
 @Injectable()
 export class TypeOrmLearningUnitOfWork implements ILearningUnitOfWork {
@@ -38,6 +41,7 @@ export class TypeOrmLearningUnitOfWork implements ILearningUnitOfWork {
   readonly users: IUserRepository;
   readonly userStats: IUserStatsRepository;
   readonly xpLevels: IXpLevelRepository;
+  readonly subscriptionPlans: ISubscriptionPlanRepository;
 
   constructor(
     private readonly dataSource: DataSource,
@@ -54,6 +58,8 @@ export class TypeOrmLearningUnitOfWork implements ILearningUnitOfWork {
     authProviderRepo: Repository<UserAuthProviderEntity>,
     @InjectRepository(UserStatsEntity) statsRepo: Repository<UserStatsEntity>,
     @InjectRepository(XpLevelEntity) xpRepo: Repository<XpLevelEntity>,
+    @InjectRepository(SubscriptionPlanEntity)
+    subscriptionPlanRepo: Repository<SubscriptionPlanEntity>,
   ) {
     this.paths = new LearningPathTypeOrmRepository(pathRepo);
     this.chapters = new ChapterTypeOrmRepository(chapterRepo);
@@ -67,6 +73,7 @@ export class TypeOrmLearningUnitOfWork implements ILearningUnitOfWork {
     );
     this.userStats = new UserStatsTypeOrmRepository(statsRepo);
     this.xpLevels = new XpLevelTypeOrmRepository(xpRepo);
+    this.subscriptionPlans = new SubscriptionPlanTypeOrmRepository(subscriptionPlanRepo);
   }
 
   async withTransaction<R>(
@@ -102,6 +109,9 @@ export class TypeOrmLearningUnitOfWork implements ILearningUnitOfWork {
       ),
       xpLevels: new XpLevelTypeOrmRepository(
         manager.getRepository(XpLevelEntity),
+      ),
+      subscriptionPlans: new SubscriptionPlanTypeOrmRepository(
+        manager.getRepository(SubscriptionPlanEntity),
       ),
       withTransaction: <T>(innerFn: (uow: ILearningUnitOfWork) => Promise<T>) =>
         innerFn(tx),

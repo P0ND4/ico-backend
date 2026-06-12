@@ -3,10 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { LearningPathEntity } from './learning-path.entity';
+import { JobStatusEntity } from '../catalog/job-status.entity';
 
 @Entity({ schema: 'trn', name: 'path_generation_jobs' })
 export class PathGenerationJobEntity {
@@ -16,12 +18,22 @@ export class PathGenerationJobEntity {
   @Column({ type: 'uuid', name: 'path_id' })
   pathId!: string;
 
-  @OneToOne(() => LearningPathEntity)
+  @OneToOne(() => LearningPathEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'path_id' })
   path!: LearningPathEntity;
 
   @Column({ type: 'varchar', length: 50, default: 'pending' })
   status!: string;
+
+  @ManyToOne(() => JobStatusEntity, { eager: false })
+  @JoinColumn({ name: 'status', referencedColumnName: 'code' })
+  jobStatus!: JobStatusEntity;
+
+  @Column({ type: 'int', default: 0 })
+  progress!: number;
+
+  @Column({ type: 'text', name: 'progress_label', nullable: true })
+  progressLabel!: string | null;
 
   @Column({ type: 'text', name: 'error_msg', nullable: true })
   errorMsg!: string | null;

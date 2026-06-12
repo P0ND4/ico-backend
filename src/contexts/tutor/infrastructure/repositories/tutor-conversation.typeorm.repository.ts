@@ -1,12 +1,18 @@
 import { Repository } from 'typeorm';
 import { TutorConversationEntity } from 'src/contexts/shared/domain/entities/tutor/tutor-conversation.entity';
+import { TutorMessageEntity } from 'src/contexts/shared/domain/entities/tutor/tutor-message.entity';
 import { ITutorConversationRepository } from '../../domain/ports/tutor-conversation.repository.port';
 
 export class TutorConversationTypeOrmRepository implements ITutorConversationRepository {
   constructor(private readonly repo: Repository<TutorConversationEntity>) {}
 
   findAllByUserId(userId: string): Promise<TutorConversationEntity[]> {
-    return this.repo.find({ where: { userId }, order: { updatedAt: 'DESC' } });
+    return this.repo
+      .createQueryBuilder('c')
+      .innerJoin(TutorMessageEntity, 'm', 'm.conversationId = c.id')
+      .where('c.userId = :userId', { userId })
+      .orderBy('c.updatedAt', 'DESC')
+      .getMany();
   }
 
   findByIdAndUserId(

@@ -4,6 +4,6 @@ export class ProviderAlreadyLinkedError extends DomainError {
   readonly statusCode = 409;
 
   constructor() {
-    super('This social account is already linked to a different user.');
+    super('provider_already_linked');
   }
 }

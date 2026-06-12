@@ -17,4 +17,9 @@ export class AppleAuthRequest {
   @IsOptional()
   @IsString()
   fullName?: string;
+
+  @ApiPropertyOptional({ description: 'Stable device identifier for trial abuse prevention' })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
 }

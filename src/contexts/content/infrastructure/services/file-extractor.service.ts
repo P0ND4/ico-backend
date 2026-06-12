@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import * as pdfParseModule from 'pdf-parse';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { PDFParse } = require('pdf-parse');
 import mammoth from 'mammoth';
-const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
 import { IFileExtractor } from '../../domain/ports/file-extractor.port';
 import { UnsupportedFileTypeError } from '../../domain/errors/unsupported-file-type.error';
 
@@ -15,8 +15,9 @@ export class FileExtractorService implements IFileExtractor {
     const ext = originalname.split('.').pop()?.toLowerCase();
 
     if (mimeType === 'application/pdf' || ext === 'pdf') {
-      const data = await pdfParse(buffer);
-      return data.text;
+      const parser = new PDFParse({ data: new Uint8Array(buffer) });
+      const result = await parser.getText();
+      return result.text;
     }
 
     if (

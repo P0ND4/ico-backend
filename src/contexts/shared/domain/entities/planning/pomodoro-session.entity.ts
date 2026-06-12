@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { UserEntity } from '../auth/user.entity';
 import { PlanTaskEntity } from './plan-task.entity';
+import { PomodoroPresetEntity } from '../config/pomodoro-preset.entity';
 
 @Entity({ schema: 'trn', name: 'pomodoro_sessions' })
 export class PomodoroSessionEntity {
@@ -16,7 +17,7 @@ export class PomodoroSessionEntity {
   @Column({ type: 'uuid', name: 'user_id' })
   userId!: string;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: UserEntity;
 
@@ -29,6 +30,10 @@ export class PomodoroSessionEntity {
 
   @Column({ type: 'int', name: 'duration_minutes' })
   durationMinutes!: number;
+
+  @ManyToOne(() => PomodoroPresetEntity, { eager: false, nullable: true })
+  @JoinColumn({ name: 'duration_minutes', referencedColumnName: 'durationMinutes' })
+  preset!: PomodoroPresetEntity | null;
 
   @Column({ type: 'boolean', name: 'is_completed', default: false })
   isCompleted!: boolean;

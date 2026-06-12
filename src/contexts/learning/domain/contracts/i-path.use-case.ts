@@ -1,3 +1,4 @@
+import type { Observable } from 'rxjs';
 import type {
   PathListItemType,
   PathDetailType,
@@ -25,7 +26,9 @@ export interface IPathUseCase {
   list(userId: string): Promise<PathListItemType[]>;
   generate(params: GeneratePathParams): Promise<GeneratePathResultType>;
   getJobStatus(jobId: string, userId: string): Promise<JobStatusType>;
+  watchJob(jobId: string, userId: string): Promise<Observable<{ data: JobStatusType }>>;
   get(id: string, userId: string): Promise<PathDetailType>;
   update(params: UpdatePathParams): Promise<PathDetailType>;
   delete(id: string, userId: string): Promise<void>;
+  askTutor(params: { pathId: string; userId: string; question: string; chapterContext?: string }): Promise<{ answer: string }>;
 }

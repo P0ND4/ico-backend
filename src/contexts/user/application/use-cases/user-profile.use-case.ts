@@ -6,7 +6,10 @@ import type { IUserProfileUseCase } from '../../domain/contracts/i-user-profile.
 import { UserProfileDto } from '../dtos/user-profile.dto';
 import { UpdateProfileDto } from '../dtos/update-profile.dto';
 import { StatsDto } from '../dtos/stats.dto';
-import { UserNotFoundError } from '../../domain/errors/auth/index';
+import { UserNotFoundError, GuestOperationForbiddenError } from '../../domain/errors/auth/index';
+import {
+  resolveTrialQuotaForProfile,
+} from 'src/contexts/shared/domain/utils/trial-usage.helper';
 
 @Injectable()
 export class UserProfileUseCase implements IUserProfileUseCase {
@@ -18,7 +21,11 @@ export class UserProfileUseCase implements IUserProfileUseCase {
   async getMe(userId: string): Promise<UserProfileDto> {
     const user = await this.uow.users.findById(userId);
     if (!user) throw new UserNotFoundError();
-    return this.toDto(user);
+    const allLevels = await this.uow.xpLevels.findAll();
+    const sorted = allLevels.sort((a, b) => a.minXp - b.minXp);
+    const currentLvl = sorted.filter((l) => l.minXp <= user.xp).at(-1);
+    const nextLvl = sorted.find((l) => l.minXp > user.xp);
+    return this.toDto(user, currentLvl?.minXp ?? 0, nextLvl?.minXp ?? (currentLvl?.maxXp ?? 500) + 1);
   }
 
   async updateMe(
@@ -28,13 +35,22 @@ export class UserProfileUseCase implements IUserProfileUseCase {
     const user = await this.uow.users.update(userId, {
       ...(data.name !== undefined && { name: data.name }),
       ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
+      ...(data.themeMode !== undefined && { themeMode: data.themeMode }),
     });
     if (!user) throw new UserNotFoundError();
-    return this.toDto(user);
+    return this.getMe(userId);
   }
 
   async deleteMe(userId: string): Promise<void> {
-    await this.uow.users.hardDelete(userId);
+    const user = await this.uow.users.findById(userId);
+    if (!user) throw new UserNotFoundError();
+    if (user.email === null) throw new GuestOperationForbiddenError();
+
+    const deviceId = user.deviceId ?? user.guestDeviceId;
+    await this.uow.users.update(userId, { deletedAt: new Date() });
+    if (deviceId) {
+      await this.uow.deviceTrials.markUsed(deviceId, userId);
+    }
   }
 
   async getStats(userId: string): Promise<StatsDto> {
@@ -70,7 +86,14 @@ export class UserProfileUseCase implements IUserProfileUseCase {
     };
   }
 
-  private toDto(user: UserEntity): UserProfileDto {
+  private async toDto(
+    user: UserEntity,
+    currentLevelMinXp: number,
+    nextLevelMinXp: number,
+  ): Promise<UserProfileDto> {
+    const plan = await this.uow.subscriptionPlans.findByCode(user.planCode ?? 'free');
+    const trialQuota = await resolveTrialQuotaForProfile(this.uow, user, plan);
+
     return {
       id: user.id,
       name: user.name,
@@ -80,6 +103,26 @@ export class UserProfileUseCase implements IUserProfileUseCase {
       level: user.level,
       streakDays: user.streakDays,
       lastActiveAt: user.lastActiveAt,
+      currentLevelMinXp,
+      nextLevelMinXp,
+      planCode: user.planCode,
+      planLabel: plan?.label ?? user.planCode,
+      isDefaultFreePlan: plan?.isDefaultFree === true,
+      isUnlimitedPlan: user.isVip || plan?.isUnlimited === true,
+      adsEnabled: plan?.adsEnabled ?? true,
+      isVip: user.isVip,
+      freeTrialUsed: user.freeTrialUsed,
+      trialTutorRemaining: trialQuota.trialTutorRemaining,
+      trialSummaryRemaining: trialQuota.trialSummaryRemaining,
+      trialStandardPathRemaining: trialQuota.trialStandardPathRemaining,
+      trialDeepPathRemaining: trialQuota.trialDeepPathRemaining,
+      tutorRequestLimit: trialQuota.tutorRequestLimit,
+      summaryRequestLimit: trialQuota.summaryRequestLimit,
+      standardPathLimit: trialQuota.standardPathLimit,
+      deepPathLimit: trialQuota.deepPathLimit,
+      quotaRenewsAt: trialQuota.quotaRenewsAt,
+      trialExhausted: trialQuota.trialExhausted,
+      themeMode: user.themeMode,
     };
   }
 }

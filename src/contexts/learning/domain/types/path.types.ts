@@ -60,6 +60,8 @@ export interface JobStatusType {
   id: string;
   status: string;
   pathId: string;
+  progress: number;
+  progressLabel: string | null;
   errorMsg: string | null;
   createdAt: Date;
 }

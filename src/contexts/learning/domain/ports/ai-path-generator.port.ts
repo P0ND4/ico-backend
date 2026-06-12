@@ -2,7 +2,7 @@ export const AI_PATH_GENERATOR = 'AI_PATH_GENERATOR';
 
 export interface GeneratedLesson {
   title: string | null;
-  type: 'theory' | 'concept' | 'example' | 'multiple_choice' | 'true_false';
+  type: 'theory' | 'concept' | 'example' | 'multiple_choice' | 'true_false' | 'open_ended';
   content: string;
   question: string | null;
   options: string[] | null;
@@ -15,6 +15,7 @@ export interface GeneratedLesson {
 export interface GeneratedChapter {
   title: string;
   order: number;
+  isExam?: boolean;
   lessons: GeneratedLesson[];
 }
 
@@ -25,6 +26,11 @@ export interface GeneratedPath {
   chapters: GeneratedChapter[];
 }
 
+export interface GenerateOptions {
+  onProgress?: (progress: number, label: string) => Promise<void>;
+}
+
 export interface IAiPathGenerator {
-  generate(topic: string, mode: 'standard' | 'deep'): Promise<GeneratedPath>;
+  generate(topic: string, mode: 'standard' | 'deep', options?: GenerateOptions): Promise<GeneratedPath>;
+  ask(context: string, question: string): Promise<string>;
 }

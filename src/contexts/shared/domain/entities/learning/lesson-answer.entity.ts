@@ -16,14 +16,14 @@ export class LessonAnswerEntity {
   @Column({ type: 'uuid', name: 'user_id' })
   userId!: string;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: UserEntity;
 
   @Column({ type: 'uuid', name: 'lesson_id' })
   lessonId!: string;
 
-  @ManyToOne(() => LessonEntity)
+  @ManyToOne(() => LessonEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'lesson_id' })
   lesson!: LessonEntity;
 

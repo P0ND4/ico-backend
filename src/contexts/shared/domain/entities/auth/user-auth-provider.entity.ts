@@ -8,6 +8,7 @@ import {
   Unique,
 } from 'typeorm';
 import { UserEntity } from './user.entity';
+import { AuthProviderEntity } from '../catalog/auth-provider.entity';
 
 @Entity({ schema: 'trn', name: 'user_auth_providers' })
 @Unique(['providerId', 'providerUserId'])
@@ -18,12 +19,16 @@ export class UserAuthProviderEntity {
   @Column({ type: 'uuid', name: 'user_id' })
   userId!: string;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: UserEntity;
 
   @Column({ type: 'uuid', name: 'provider_id' })
   providerId!: string;
+
+  @ManyToOne(() => AuthProviderEntity, { eager: false })
+  @JoinColumn({ name: 'provider_id' })
+  provider!: AuthProviderEntity;
 
   @Column({
     type: 'varchar',

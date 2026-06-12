@@ -28,9 +28,10 @@ export interface GeneratedPath {
 
 export interface GenerateOptions {
   onProgress?: (progress: number, label: string) => Promise<void>;
+  learnerContext?: string;
 }
 
 export interface IAiPathGenerator {
   generate(topic: string, mode: 'standard' | 'deep', options?: GenerateOptions): Promise<GeneratedPath>;
-  ask(context: string, question: string): Promise<string>;
+  ask(context: string, question: string, learnerContext?: string): Promise<string>;
 }

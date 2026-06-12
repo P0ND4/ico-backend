@@ -28,4 +28,22 @@ export class UpdateProfileRequest {
   @IsOptional()
   @IsEnum(['system', 'light', 'dark'])
   themeMode?: string;
+
+  @ApiPropertyOptional({ description: 'How the user learns best', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  learningStyle?: string | null;
+
+  @ApiPropertyOptional({ description: 'What the user likes in a course', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  coursePreferences?: string | null;
+
+  @ApiPropertyOptional({ description: 'Additional learning context', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  learningNotes?: string | null;
 }

@@ -36,12 +36,16 @@ export class DeepseekTutorService implements IAiTutor {
     return response.choices[0]?.message?.content?.trim() ?? firstMessage.slice(0, 40);
   }
 
-  async chat(history: ChatMessage[], userMessage: string): Promise<string> {
+  async chat(history: ChatMessage[], userMessage: string, learnerContext?: string): Promise<string> {
+    let systemContent =
+      `You are I.C.O's AI tutor. Help users understand concepts clearly and concisely. Respond in the same language the user writes in.\n\n${AI_MARKDOWN_FORMATTING_BRIEF}`;
+    if (learnerContext) {
+      systemContent += `\n\nAdapt your teaching to this learner profile:\n${learnerContext}`;
+    }
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
       {
         role: 'system',
-        content:
-          `You are I.C.O's AI tutor. Help users understand concepts clearly and concisely. Respond in the same language the user writes in.\n\n${AI_MARKDOWN_FORMATTING_BRIEF}`,
+        content: systemContent,
       },
       ...history.map((m) => ({
         role: m.role === 'model' ? ('assistant' as const) : ('user' as const),

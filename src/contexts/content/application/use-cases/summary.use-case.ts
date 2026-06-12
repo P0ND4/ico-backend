@@ -23,6 +23,7 @@ import {
   assertFeatureWithTrial,
   consumeTrialFeature,
 } from 'src/contexts/shared/domain/utils/trial-usage.helper';
+import { buildLearnerContextPrompt } from 'src/contexts/shared/domain/utils/learner-context.helper';
 
 @Injectable()
 export class SummaryUseCase implements ISummaryUseCase {
@@ -45,7 +46,11 @@ export class SummaryUseCase implements ISummaryUseCase {
 
   async generate(params: GenerateSummaryParams): Promise<SummaryEntity> {
     const user = await this.checkSummaryPlan(params.userId);
-    const summaryText = await this.aiSummarizer.summarize(params.text);
+    const learnerContext = user ? buildLearnerContextPrompt(user) : null;
+    const summaryText = await this.aiSummarizer.summarize(
+      params.text,
+      learnerContext ?? undefined,
+    );
     const summary = await this.uow.summaries.create({
       userId: params.userId,
       originalText: params.text,
@@ -66,7 +71,11 @@ export class SummaryUseCase implements ISummaryUseCase {
       params.originalname,
     );
 
-    const summaryText = await this.aiSummarizer.summarize(extractedText);
+    const learnerContext = user ? buildLearnerContextPrompt(user) : null;
+    const summaryText = await this.aiSummarizer.summarize(
+      extractedText,
+      learnerContext ?? undefined,
+    );
 
     const ext = params.originalname.split('.').pop()?.toLowerCase();
     const sourceType = ext === 'pdf' ? 'pdf' : ext === 'docx' ? 'docx' : 'txt';

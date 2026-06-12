@@ -67,6 +67,9 @@ export class UsersController {
       name: body.name,
       avatarUrl: body.avatarUrl,
       themeMode: body.themeMode,
+      learningStyle: body.learningStyle,
+      coursePreferences: body.coursePreferences,
+      learningNotes: body.learningNotes,
     });
   }
 

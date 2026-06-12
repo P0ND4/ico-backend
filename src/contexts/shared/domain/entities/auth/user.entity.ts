@@ -58,6 +58,15 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 10, name: 'theme_mode', default: 'system' })
   themeMode!: string;
 
+  @Column({ type: 'text', name: 'learning_style', nullable: true })
+  learningStyle!: string | null;
+
+  @Column({ type: 'text', name: 'course_preferences', nullable: true })
+  coursePreferences!: string | null;
+
+  @Column({ type: 'text', name: 'learning_notes', nullable: true })
+  learningNotes!: string | null;
+
   @Column({ type: 'boolean', name: 'free_trial_used', default: false })
   freeTrialUsed!: boolean;
 

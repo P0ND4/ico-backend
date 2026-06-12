@@ -27,12 +27,18 @@ export interface UserProfileType {
   quotaRenewsAt: Date | null;
   trialExhausted: boolean;
   themeMode: string;
+  learningStyle: string | null;
+  coursePreferences: string | null;
+  learningNotes: string | null;
 }
 
 export interface UpdateProfileType {
   name?: string | null;
   avatarUrl?: string | null;
   themeMode?: string;
+  learningStyle?: string | null;
+  coursePreferences?: string | null;
+  learningNotes?: string | null;
 }
 
 export interface StatsType {

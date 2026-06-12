@@ -242,6 +242,9 @@ CREATE TABLE trn.users (
   streak_days    INTEGER      NOT NULL DEFAULT 0 CHECK (streak_days >= 0),
   last_active_at TIMESTAMPTZ,
   plan_code      VARCHAR(50)  NOT NULL DEFAULT 'free' REFERENCES con.subscription_plans(code),
+  learning_style     TEXT,
+  course_preferences TEXT,
+  learning_notes     TEXT,
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );

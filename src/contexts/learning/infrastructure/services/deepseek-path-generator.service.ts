@@ -31,13 +31,13 @@ export class DeepseekPathGeneratorService implements IAiPathGenerator {
     mode: 'standard' | 'deep',
     options?: GenerateOptions,
   ): Promise<GeneratedPath> {
-    const { onProgress } = options ?? {};
+    const { onProgress, learnerContext } = options ?? {};
 
     this.logger.log(`Generating ${mode} learning path for topic: ${topic}`);
 
     // ── Phase 1: structure (titles + lesson stubs, no content) ──────────────
     await onProgress?.(5, 'Diseñando la estructura del curso...');
-    const structure = await this.generateStructure(topic, mode);
+    const structure = await this.generateStructure(topic, mode, learnerContext);
     const total = structure.chapters.length;
     this.logger.log(`Structure ready: ${total} chapters`);
     await onProgress?.(15, `Estructura lista: ${total} capítulos`);
@@ -46,7 +46,13 @@ export class DeepseekPathGeneratorService implements IAiPathGenerator {
     let completed = 0;
     const chaptersWithContent = await Promise.all(
       structure.chapters.map(async (chapter) => {
-        const filled = await this.generateChapterContent(chapter, structure.title, topic, mode);
+        const filled = await this.generateChapterContent(
+          chapter,
+          structure.title,
+          topic,
+          mode,
+          learnerContext,
+        );
         completed++;
         const pct = Math.round(15 + (80 * completed) / total);
         await onProgress?.(pct, `Generando capítulo ${completed} de ${total}: ${chapter.title}`);
@@ -73,9 +79,15 @@ export class DeepseekPathGeneratorService implements IAiPathGenerator {
 
   // ── Phase 1: generate path structure with empty lesson content ─────────────
 
+  private appendLearnerContext(prompt: string, learnerContext?: string): string {
+    if (!learnerContext) return prompt;
+    return `${prompt}\n\nPersonalize for this learner:\n${learnerContext}`;
+  }
+
   private async generateStructure(
     topic: string,
     mode: 'standard' | 'deep',
+    learnerContext?: string,
   ): Promise<GeneratedPath> {
     const systemPrompt = `You are an expert educational content creator designing learning path structures.
 
@@ -117,9 +129,12 @@ Rules:
 - open_ended lessons: only question field is required; content/options/correctIndex/correctAnswer must be null
 - Language: same as the topic`;
 
-    const userPrompt = mode === 'deep'
-      ? `Design the COMPLETE structure for a deep, comprehensive learning path about: "${topic}". Cover all prerequisites, all major topics, advanced concepts. Do not skip steps. Set content = "" for all lessons.`
-      : `Design the structure for a standard learning path about: "${topic}". Assess what the learner likely knows and build from there. Set content = "" for all lessons.`;
+    const userPrompt = this.appendLearnerContext(
+      mode === 'deep'
+        ? `Design the COMPLETE structure for a deep, comprehensive learning path about: "${topic}". Cover all prerequisites, all major topics, advanced concepts. Do not skip steps. Set content = "" for all lessons.`
+        : `Design the structure for a standard learning path about: "${topic}". Assess what the learner likely knows and build from there. Set content = "" for all lessons.`,
+      learnerContext,
+    );
 
     const response = await this.callApi(systemPrompt, userPrompt);
     const choice = response.choices[0];
@@ -199,6 +214,7 @@ Generate remaining chapters from order ${nextOrder}. Return {"chapters": [...]}`
     pathTitle: string,
     topic: string,
     mode: 'standard' | 'deep' = 'standard',
+    learnerContext?: string,
   ): Promise<GeneratedChapter> {
     const lessonStubs = (chapter.lessons ?? []).map((l) => ({
       title: l.title,
@@ -219,6 +235,7 @@ Generate remaining chapters from order ${nextOrder}. Return {"chapters": [...]}`
         mode,
         lessonStubs,
         attempt,
+        learnerContext,
       );
       if (filled && this.hasRequiredReadingContent(filled, lessonStubs)) {
         return { ...chapter, lessons: filled };
@@ -236,6 +253,7 @@ Generate remaining chapters from order ${nextOrder}. Return {"chapters": [...]}`
       pathTitle,
       mode,
       lessonStubs,
+      learnerContext,
     );
     return { ...chapter, lessons: fallbackLessons };
   }
@@ -246,6 +264,7 @@ Generate remaining chapters from order ${nextOrder}. Return {"chapters": [...]}`
     mode: 'standard' | 'deep',
     lessonStubs: GeneratedChapter['lessons'],
     attempt: number,
+    learnerContext?: string,
   ): Promise<GeneratedChapter['lessons'] | null> {
     const modeInstructions = this.buildModeInstructions(mode);
     const systemPrompt = `You are filling in the lesson content for a learning path chapter.
@@ -265,11 +284,14 @@ ${AI_MARKDOWN_FORMATTING}
         ? '\n\nIMPORTANT: Your previous response was invalid or incomplete JSON. Return ONLY valid JSON with no markdown fences.'
         : '';
 
-    const userPrompt = `Path: "${pathTitle}"
+    const userPrompt = this.appendLearnerContext(
+      `Path: "${pathTitle}"
 Chapter ${chapter.order}: "${chapter.title}"
 
 Fill in the content for each lesson below:
-${JSON.stringify(lessonStubs, null, 2)}${retryHint}`;
+${JSON.stringify(lessonStubs, null, 2)}${retryHint}`,
+      learnerContext,
+    );
 
     const response = await this.callApi(systemPrompt, userPrompt);
     const choice = response.choices[0];
@@ -294,6 +316,7 @@ ${JSON.stringify(lessonStubs, null, 2)}${retryHint}`;
     pathTitle: string,
     mode: 'standard' | 'deep',
     lessonStubs: GeneratedChapter['lessons'],
+    learnerContext?: string,
   ): Promise<GeneratedChapter['lessons']> {
     const readingTypes = new Set(['theory', 'concept', 'example']);
 
@@ -307,6 +330,7 @@ ${JSON.stringify(lessonStubs, null, 2)}${retryHint}`;
           chapter.title,
           pathTitle,
           mode,
+          learnerContext,
         );
         return content ? { ...stub, content } : stub;
       }),
@@ -318,16 +342,20 @@ ${JSON.stringify(lessonStubs, null, 2)}${retryHint}`;
     chapterTitle: string,
     pathTitle: string,
     mode: 'standard' | 'deep',
+    learnerContext?: string,
   ): Promise<string | null> {
     const systemPrompt = `You write lesson content for a learning app. Return ONLY a JSON object: {"content": "..."}.
 Use markdown. ${this.buildModeInstructions(mode)}
 Language: same as the chapter title.`;
 
-    const userPrompt = `Path: "${pathTitle}"
+    const userPrompt = this.appendLearnerContext(
+      `Path: "${pathTitle}"
 Chapter: "${chapterTitle}"
 Lesson (${lesson.type}): "${lesson.title ?? 'Sin título'}"
 
-Write the content for this lesson.`;
+Write the content for this lesson.`,
+      learnerContext,
+    );
 
     try {
       const response = await this.callApi(systemPrompt, userPrompt);
@@ -453,11 +481,15 @@ Write the content for this lesson.`;
     return items;
   }
 
-  async ask(context: string, question: string): Promise<string> {
+  async ask(context: string, question: string, learnerContext?: string): Promise<string> {
+    let systemContent = `You are a helpful and concise tutor. The student is learning the following:\n\n${context}\n\nAnswer clearly in the same language the student writes in. Be brief and encouraging.\n\n${AI_MARKDOWN_FORMATTING_BRIEF}`;
+    if (learnerContext) {
+      systemContent += `\n\nAdapt your teaching to this learner profile:\n${learnerContext}`;
+    }
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
       {
         role: 'system',
-        content: `You are a helpful and concise tutor. The student is learning the following:\n\n${context}\n\nAnswer clearly in the same language the student writes in. Be brief and encouraging.\n\n${AI_MARKDOWN_FORMATTING_BRIEF}`,
+        content: systemContent,
       },
       { role: 'user', content: question },
     ];

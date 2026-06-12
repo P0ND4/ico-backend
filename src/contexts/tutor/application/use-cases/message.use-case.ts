@@ -15,6 +15,7 @@ import {
   assertFeatureWithTrial,
   consumeTrialFeature,
 } from 'src/contexts/shared/domain/utils/trial-usage.helper';
+import { buildLearnerContextPrompt } from 'src/contexts/shared/domain/utils/learner-context.helper';
 
 @Injectable()
 export class MessageUseCase implements IMessageUseCase {
@@ -67,7 +68,11 @@ export class MessageUseCase implements IMessageUseCase {
     });
 
     const [aiResponse, title] = await Promise.all([
-      this.aiTutor.chat(history, params.content),
+      this.aiTutor.chat(
+        history,
+        params.content,
+        user ? buildLearnerContextPrompt(user) ?? undefined : undefined,
+      ),
       existingMessages.length === 0
         ? this.aiTutor.generateTitle(params.content)
         : Promise.resolve(null),

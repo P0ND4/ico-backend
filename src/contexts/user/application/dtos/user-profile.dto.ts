@@ -29,4 +29,7 @@ export class UserProfileDto implements UserProfileType {
   quotaRenewsAt!: Date | null;
   trialExhausted!: boolean;
   themeMode!: string;
+  learningStyle!: string | null;
+  coursePreferences!: string | null;
+  learningNotes!: string | null;
 }

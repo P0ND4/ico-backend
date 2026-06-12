@@ -19,6 +19,7 @@ import {
   assertPathGenerationWithTrial,
   consumePathGeneration,
 } from 'src/contexts/shared/domain/utils/trial-usage.helper';
+import { buildLearnerContextPrompt } from 'src/contexts/shared/domain/utils/learner-context.helper';
 import type { PathMode } from 'src/contexts/shared/domain/utils/plan-guard';
 import { UNIT_OF_WORK } from 'src/contexts/shared/domain/repositories/unit-of-work.interface';
 import type { IUnitOfWork } from 'src/contexts/shared/domain/repositories/unit-of-work.interface';
@@ -155,10 +156,13 @@ export class PathUseCase implements IPathUseCase {
     };
 
     try {
+      const user = await this.sharedUow.users.findById(userId);
+      const learnerContext = user ? buildLearnerContextPrompt(user) : null;
+
       const generated = await this.aiGenerator.generate(
         topic,
         mode as 'standard' | 'deep',
-        { onProgress },
+        { onProgress, learnerContext: learnerContext ?? undefined },
       );
 
       let totalXp = 0;
@@ -222,7 +226,6 @@ export class PathUseCase implements IPathUseCase {
       });
       this.emit(jobId, this.toJobStatusDto(completed));
 
-      const user = await this.uow.users.findById(userId);
       if (user) {
         const pathMode: PathMode = mode === 'deep' ? 'deep' : 'standard';
         await consumePathGeneration(this.sharedUow, user, pathMode);
@@ -285,8 +288,10 @@ export class PathUseCase implements IPathUseCase {
   async askTutor(params: { pathId: string; userId: string; question: string; chapterContext?: string }): Promise<{ answer: string }> {
     const path = await this.uow.paths.findByIdAndUserId(params.pathId, params.userId);
     if (!path) throw new PathNotFoundError();
+    const user = await this.sharedUow.users.findById(params.userId);
+    const learnerContext = user ? buildLearnerContextPrompt(user) : null;
     const context = `Learning path topic: "${path.topic}"\n${params.chapterContext ?? ''}`;
-    const answer = await this.aiGenerator.ask(context, params.question);
+    const answer = await this.aiGenerator.ask(context, params.question, learnerContext ?? undefined);
     return { answer };
   }
 

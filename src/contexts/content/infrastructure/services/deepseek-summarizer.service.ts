@@ -20,14 +20,18 @@ export class DeepseekSummarizerService implements IAiSummarizer {
     this.model = config.get<string>('DEEPSEEK_MODEL', 'deepseek-chat');
   }
 
-  async summarize(text: string): Promise<string> {
+  async summarize(text: string, learnerContext?: string): Promise<string> {
+    let systemContent =
+      `You are an expert at creating critical, structured summaries. Generate a comprehensive summary that captures the key ideas, arguments, and conclusions. Respond in the same language as the input text.\n\n${AI_MARKDOWN_FORMATTING_BRIEF}`;
+    if (learnerContext) {
+      systemContent += `\n\nAdapt tone, structure, and depth to this learner profile:\n${learnerContext}`;
+    }
     const response = await this.client.chat.completions.create({
       model: this.model,
       messages: [
         {
           role: 'system',
-          content:
-            `You are an expert at creating critical, structured summaries. Generate a comprehensive summary that captures the key ideas, arguments, and conclusions. Respond in the same language as the input text.\n\n${AI_MARKDOWN_FORMATTING_BRIEF}`,
+          content: systemContent,
         },
         {
           role: 'user',

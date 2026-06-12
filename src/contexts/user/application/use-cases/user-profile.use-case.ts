@@ -36,6 +36,9 @@ export class UserProfileUseCase implements IUserProfileUseCase {
       ...(data.name !== undefined && { name: data.name }),
       ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
       ...(data.themeMode !== undefined && { themeMode: data.themeMode }),
+      ...(data.learningStyle !== undefined && { learningStyle: data.learningStyle }),
+      ...(data.coursePreferences !== undefined && { coursePreferences: data.coursePreferences }),
+      ...(data.learningNotes !== undefined && { learningNotes: data.learningNotes }),
     });
     if (!user) throw new UserNotFoundError();
     return this.getMe(userId);
@@ -123,6 +126,9 @@ export class UserProfileUseCase implements IUserProfileUseCase {
       quotaRenewsAt: trialQuota.quotaRenewsAt,
       trialExhausted: trialQuota.trialExhausted,
       themeMode: user.themeMode,
+      learningStyle: user.learningStyle,
+      coursePreferences: user.coursePreferences,
+      learningNotes: user.learningNotes,
     };
   }
 }

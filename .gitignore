@@ -42,6 +42,9 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# nginx config generada en deploy
+nginx/conf.d/default.conf
+
 # temp directory
 .temp
 .tmp

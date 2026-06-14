@@ -20,8 +20,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { RedisModule } from 'src/database/redis.module';
 import { SeederService } from 'src/app/seeds/seeder.service';
 import { CleanupService } from 'src/app/cleanup/cleanup.service';
+import { HealthController } from 'src/app/health/health.controller';
 
 @Module({
+  controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true }),
     RedisModule,

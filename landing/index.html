@@ -15,6 +15,7 @@
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://ico-app.org/" />
+    <meta property="og:image" content="https://ico-app.org/assets/hero-banner.png" />
     <link rel="icon" href="/assets/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/assets/icon.png" />
     <link rel="stylesheet" href="/styles.css" />
@@ -26,7 +27,14 @@
           <img src="/assets/icon.png" alt="ICO" width="40" height="40" />
           ICO
         </a>
-        <a class="nav-cta" href="#descargar">Descargar gratis</a>
+        <a
+          class="nav-cta"
+          href="https://play.google.com/store/apps/details?id=com.lmacml.ico"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Descargar gratis
+        </a>
       </div>
     </header>
 
@@ -42,38 +50,26 @@
               Tú dices qué quieres dominar y cómo aprendes mejor: la IA se encarga del resto.
             </p>
             <div class="hero-actions">
-              <a class="btn btn-primary" href="#descargar">Empezar gratis</a>
+              <a
+                class="btn btn-primary"
+                href="https://play.google.com/store/apps/details?id=com.lmacml.ico"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Descargar en Google Play
+              </a>
               <a class="btn btn-secondary" href="#funciones">Ver funciones</a>
             </div>
           </div>
-          <aside class="hero-card" aria-label="Beneficios principales">
-            <ul>
-              <li>
-                <span class="icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
-                </span>
-                <span>Rutas personalizadas con módulos, capítulos y XP</span>
-              </li>
-              <li>
-                <span class="icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                </span>
-                <span>Resúmenes críticos de apuntes y lecturas largas</span>
-              </li>
-              <li>
-                <span class="icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                </span>
-                <span>Tutor IA disponible cuando te trabes</span>
-              </li>
-              <li>
-                <span class="icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                </span>
-                <span>Panel claro de progreso y metas diarias</span>
-              </li>
-            </ul>
-          </aside>
+          <figure class="hero-visual">
+            <img
+              src="/assets/hero-banner.png"
+              alt="Capturas de ICO: rutas de aprendizaje, tutor IA y resúmenes"
+              width="640"
+              height="360"
+              loading="eager"
+            />
+          </figure>
         </div>
       </section>
 
@@ -130,6 +126,22 @@
         </div>
       </section>
 
+      <section class="screenshots-section" id="capturas">
+        <div class="container">
+          <div class="section-title">
+            <h2>Así se ve ICO por dentro</h2>
+            <p>Interfaz simple, limpia y en español.</p>
+          </div>
+          <div class="screenshots-grid">
+            <img src="/assets/screenshots/playstore_1.png" alt="Pantalla de inicio de ICO" loading="lazy" />
+            <img src="/assets/screenshots/playstore_2.png" alt="Rutas de aprendizaje en ICO" loading="lazy" />
+            <img src="/assets/screenshots/playstore_3.png" alt="Tutor con IA en ICO" loading="lazy" />
+            <img src="/assets/screenshots/playstore_4.png" alt="Resúmenes en ICO" loading="lazy" />
+            <img src="/assets/screenshots/playstore_5.png" alt="Progreso y estadísticas en ICO" loading="lazy" />
+          </div>
+        </div>
+      </section>
+
       <section class="why-section">
         <div class="container">
           <div class="section-title">
@@ -165,8 +177,17 @@
           <h2>Estudia de forma más inteligente, no más difícil.</h2>
           <p>Descarga ICO gratis y empieza hoy tu primer camino de aprendizaje.</p>
           <div class="store-buttons">
-            <a class="btn btn-primary store-btn" href="#" aria-disabled="true">Google Play — próximamente</a>
-            <a class="btn btn-secondary store-btn" href="#" aria-disabled="true">App Store — próximamente</a>
+            <a
+              class="btn btn-primary store-btn"
+              href="https://play.google.com/store/apps/details?id=com.lmacml.ico"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google Play
+            </a>
+            <span class="btn btn-secondary store-btn store-btn-disabled" aria-disabled="true">
+              App Store — próximamente
+            </span>
           </div>
         </div>
       </section>
@@ -175,7 +196,22 @@
     <footer class="site-footer">
       <div class="container">
         <span>© <span id="year"></span> ICO. Todos los derechos reservados.</span>
-        <a href="https://api.ico-app.org/api/docs">Documentación API</a>
+        <nav class="footer-links" aria-label="Enlaces legales">
+          <a
+            href="https://sites.google.com/view/ico-privacy-policy/inicio"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Política de privacidad
+          </a>
+          <a
+            href="https://sites.google.com/view/ico-terms-and-conditions/inicio"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Términos y condiciones
+          </a>
+        </nav>
       </div>
     </footer>
 

@@ -115,7 +115,7 @@ cert_exists() {
 
 install_renew_cron() {
   local marker="ico-backend-certbot-renew"
-  local cron_cmd="0 3 * * * cd ${SCRIPT_DIR} && docker compose --profile prod run --rm certbot renew --quiet && docker compose --profile prod exec -T nginx nginx -s reload # ${marker}"
+  local cron_cmd="0 3 * * * cd ${SCRIPT_DIR} && docker compose --profile prod run --rm --entrypoint certbot certbot renew --quiet && docker compose --profile prod exec -T nginx nginx -s reload # ${marker}"
 
   if crontab -l 2>/dev/null | grep -q "$marker"; then
     echo "✓ Cron de renovación SSL ya configurado"
@@ -171,7 +171,7 @@ done
 if ! cert_exists; then
   echo ""
   echo "Solicitando certificado Let's Encrypt..."
-  $COMPOSE run --rm certbot certonly \
+  $COMPOSE run --rm --entrypoint certbot certbot certonly \
     --webroot -w /var/www/certbot \
     -d "$API_DOMAIN" \
     -d "$WWW_API_DOMAIN" \
@@ -202,7 +202,7 @@ for _ in $(seq 1 30); do
     echo "          https://${WWW_LANDING_DOMAIN} → ${LANDING_DOMAIN}"
     echo "API:      https://${API_DOMAIN}/api"
     echo "          https://${WWW_API_DOMAIN} → ${API_DOMAIN}"
-    echo "Swagger:  https://${API_DOMAIN}/api/docs"
+    echo "Health:   https://${API_DOMAIN}/api/health"
     echo ""
     $COMPOSE ps
     exit 0

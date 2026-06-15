@@ -233,20 +233,26 @@ INSERT INTO con.app_settings (key, value, description) VALUES
 
 -- Transactional Tables
 CREATE TABLE trn.users (
-  id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  name           VARCHAR(100),
-  email          VARCHAR(255) UNIQUE,
-  avatar_url     TEXT,
-  xp             INTEGER      NOT NULL DEFAULT 0 CHECK (xp >= 0),
-  level          INTEGER      NOT NULL DEFAULT 1 REFERENCES con.xp_levels(level),
-  streak_days    INTEGER      NOT NULL DEFAULT 0 CHECK (streak_days >= 0),
-  last_active_at TIMESTAMPTZ,
-  plan_code      VARCHAR(50)  NOT NULL DEFAULT 'free' REFERENCES con.subscription_plans(code),
+  id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  name               VARCHAR(100),
+  email              VARCHAR(255) UNIQUE,
+  avatar_url         TEXT,
+  xp                 INTEGER      NOT NULL DEFAULT 0 CHECK (xp >= 0),
+  level              INTEGER      NOT NULL DEFAULT 1 REFERENCES con.xp_levels(level),
+  streak_days        INTEGER      NOT NULL DEFAULT 0 CHECK (streak_days >= 0),
+  last_active_at     TIMESTAMPTZ,
+  plan_code          VARCHAR(50)  NOT NULL DEFAULT 'free' REFERENCES con.subscription_plans(code),
+  guest_device_id    VARCHAR(36)  UNIQUE,
+  device_id          VARCHAR(64),
+  is_vip             BOOLEAN      NOT NULL DEFAULT FALSE,
+  theme_mode         VARCHAR(10)  NOT NULL DEFAULT 'system',
   learning_style     TEXT,
   course_preferences TEXT,
   learning_notes     TEXT,
-  created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-  updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+  free_trial_used    BOOLEAN      NOT NULL DEFAULT FALSE,
+  deleted_at         TIMESTAMPTZ,
+  created_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 CREATE TRIGGER trg_trn_users_updated_at

@@ -36,4 +36,11 @@ morgan.token('nest-format', (req, res) => {
   );
 });
 
-export const httpLogger = morgan(':nest-format');
+const HEALTH_PATH = '/api/health';
+
+function isHealthCheck(req: { url?: string }): boolean {
+  const url = req.url ?? '';
+  return url === HEALTH_PATH || url.startsWith(`${HEALTH_PATH}?`);
+}
+
+export const httpLogger = morgan(':nest-format', { skip: isHealthCheck });

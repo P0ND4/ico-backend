@@ -173,10 +173,7 @@ export class AuthUseCase implements IAuthUseCase {
   async loginAsGuest(deviceId?: string): Promise<AuthResult> {
     if (deviceId) {
       const existing = await this.uow.users.findByGuestDeviceId(deviceId);
-      if (existing) {
-        if (existing.deletedAt) {
-          await this.uow.users.update(existing.id, { deletedAt: null });
-        }
+      if (existing && !existing.deletedAt) {
         return this.buildAuthResponse(existing);
       }
     }

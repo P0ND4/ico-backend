@@ -6,7 +6,7 @@ import type { IUserProfileUseCase } from '../../domain/contracts/i-user-profile.
 import { UserProfileDto } from '../dtos/user-profile.dto';
 import { UpdateProfileDto } from '../dtos/update-profile.dto';
 import { StatsDto } from '../dtos/stats.dto';
-import { UserNotFoundError, GuestOperationForbiddenError } from '../../domain/errors/auth/index';
+import { UserNotFoundError } from '../../domain/errors/auth/index';
 import {
   resolveTrialQuotaForProfile,
 } from 'src/contexts/shared/domain/utils/trial-usage.helper';
@@ -47,12 +47,18 @@ export class UserProfileUseCase implements IUserProfileUseCase {
   async deleteMe(userId: string): Promise<void> {
     const user = await this.uow.users.findById(userId);
     if (!user) throw new UserNotFoundError();
-    if (user.email === null) throw new GuestOperationForbiddenError();
 
     const deviceId = user.deviceId ?? user.guestDeviceId;
-    await this.uow.users.update(userId, { deletedAt: new Date() });
+    const isGuest = user.email === null;
+
     if (deviceId) {
       await this.uow.deviceTrials.markUsed(deviceId, userId);
+    }
+
+    if (isGuest) {
+      await this.uow.users.hardDelete(userId);
+    } else {
+      await this.uow.users.update(userId, { deletedAt: new Date() });
     }
   }
 

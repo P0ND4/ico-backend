@@ -7,6 +7,7 @@ import {
   GeneratedPath,
   GeneratedChapter,
 } from '../../domain/ports/ai-path-generator.port';
+import { normalizeGeneratedPath } from '../../domain/utils/normalize-generated-lesson.util';
 import { AI_MARKDOWN_FORMATTING, AI_MARKDOWN_FORMATTING_BRIEF } from 'src/contexts/shared/constants/ai-markdown-formatting';
 
 @Injectable()
@@ -69,12 +70,12 @@ export class DeepseekPathGeneratorService implements IAiPathGenerator {
 
     this.logger.log(`Generation complete: ${chapters.length} chapters, topic: "${topic}"`);
 
-    return {
+    return normalizeGeneratedPath({
       title: structure.title,
       description: structure.description,
       tagNames: structure.tagNames,
       chapters,
-    };
+    });
   }
 
   // ── Phase 1: generate path structure with empty lesson content ─────────────

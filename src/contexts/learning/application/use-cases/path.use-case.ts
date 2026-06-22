@@ -25,6 +25,7 @@ import { UNIT_OF_WORK } from 'src/contexts/shared/domain/repositories/unit-of-wo
 import type { IUnitOfWork } from 'src/contexts/shared/domain/repositories/unit-of-work.interface';
 import { LearningPathEntity } from 'src/contexts/shared/domain/entities/learning/learning-path.entity';
 import { ChapterEntity } from 'src/contexts/shared/domain/entities/learning/chapter.entity';
+import { normalizeGeneratedPath } from '../../domain/utils/normalize-generated-lesson.util';
 
 @Injectable()
 export class PathUseCase implements IPathUseCase {
@@ -159,10 +160,12 @@ export class PathUseCase implements IPathUseCase {
       const user = await this.sharedUow.users.findById(userId);
       const learnerContext = user ? buildLearnerContextPrompt(user) : null;
 
-      const generated = await this.aiGenerator.generate(
-        topic,
-        mode as 'standard' | 'deep',
-        { onProgress, learnerContext: learnerContext ?? undefined },
+      const generated = normalizeGeneratedPath(
+        await this.aiGenerator.generate(
+          topic,
+          mode as 'standard' | 'deep',
+          { onProgress, learnerContext: learnerContext ?? undefined },
+        ),
       );
 
       let totalXp = 0;

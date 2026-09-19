@@ -2,10 +2,10 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity({ schema: 'con', name: 'subscription_plans' })
 export class SubscriptionPlanEntity {
-  @PrimaryColumn({ name: 'code' })
+  @PrimaryColumn({ name: 'code', type: 'varchar', length: 50 })
   code!: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 100 })
   label!: string;
 
   @Column({ name: 'price_monthly', type: 'numeric', precision: 10, scale: 2, nullable: true })
@@ -55,7 +55,7 @@ export class SubscriptionPlanEntity {
   @Column({ name: 'quota_reset_days', type: 'integer', nullable: true })
   quotaResetDays!: number | null;
 
-  @Column({ name: 'quota_scope', default: 'device' })
+  @Column({ name: 'quota_scope', type: 'varchar', length: 10, default: 'device' })
   quotaScope!: 'device' | 'user';
 
   @Column({ name: 'enforce_device_trial_slot', default: false })

@@ -11,4 +11,5 @@ export class PathListItemDto implements PathListItemType {
   chapterCount!: number;
   completedChapterCount!: number;
   createdAt!: Date;
+  deletedAt!: string | null;
 }

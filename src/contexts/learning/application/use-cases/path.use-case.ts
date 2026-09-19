@@ -41,8 +41,13 @@ export class PathUseCase implements IPathUseCase {
     private readonly sharedUow: IUnitOfWork,
   ) {}
 
-  async list(userId: string): Promise<PathListItemDto[]> {
-    const paths = await this.uow.paths.findAllByUserId(userId);
+  async list(
+    userId: string,
+    includeDeleted = false,
+  ): Promise<PathListItemDto[]> {
+    const paths = includeDeleted
+      ? await this.uow.paths.findAllByUserIdIncludingDeleted(userId)
+      : await this.uow.paths.findAllByUserId(userId);
 
     const result: PathListItemDto[] = [];
     for (const path of paths) {
@@ -288,6 +293,22 @@ export class PathUseCase implements IPathUseCase {
     await this.uow.paths.delete(id);
   }
 
+  async restore(id: string, userId: string): Promise<PathDetailDto> {
+    const existing = await this.uow.paths.findByIdAndUserIdIncludingDeleted(
+      id,
+      userId,
+    );
+    if (!existing) throw new PathNotFoundError();
+
+    await this.uow.paths.restore(id);
+
+    const restored = await this.uow.paths.findByIdAndUserId(id, userId);
+    if (!restored) throw new PathNotFoundError();
+
+    const chapters = await this.uow.chapters.findAllByPathId(id);
+    return this.toDetailDto(restored, chapters);
+  }
+
   async askTutor(params: { pathId: string; userId: string; question: string; chapterContext?: string }): Promise<{ answer: string }> {
     const path = await this.uow.paths.findByIdAndUserId(params.pathId, params.userId);
     if (!path) throw new PathNotFoundError();
@@ -316,6 +337,7 @@ export class PathUseCase implements IPathUseCase {
       chapterCount: chapters.length,
       completedChapterCount,
       createdAt: path.createdAt,
+      deletedAt: path.deletedAt ? path.deletedAt.toISOString() : null,
     };
   }
 
@@ -349,6 +371,7 @@ export class PathUseCase implements IPathUseCase {
       chapterCount: chapters.length,
       completedChapterCount,
       createdAt: path.createdAt,
+      deletedAt: path.deletedAt ? path.deletedAt.toISOString() : null,
       chapters: chapterSummaries,
     };
   }

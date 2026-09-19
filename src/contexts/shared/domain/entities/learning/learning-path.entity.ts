@@ -1,5 +1,6 @@
 import {
   Column,
+  DeleteDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -50,4 +51,7 @@ export class LearningPathEntity extends BaseEntity {
 
   @Column({ type: 'int', name: 'earned_xp', default: 0 })
   earnedXp!: number;
+
+  @DeleteDateColumn({ type: 'timestamptz', name: 'deleted_at', nullable: true })
+  deletedAt!: Date | null;
 }

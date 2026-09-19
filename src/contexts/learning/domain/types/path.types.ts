@@ -34,6 +34,7 @@ export interface PathListItemType {
   chapterCount: number;
   completedChapterCount: number;
   createdAt: Date;
+  deletedAt: string | null;
 }
 
 export interface PathDetailType extends PathListItemType {

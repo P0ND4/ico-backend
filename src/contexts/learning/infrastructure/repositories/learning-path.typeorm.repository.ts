@@ -16,6 +16,19 @@ export class LearningPathTypeOrmRepository implements ILearningPathRepository {
     return this.repo.findOne({ where: { id, userId } });
   }
 
+  findAllByUserIdIncludingDeleted(
+    userId: string,
+  ): Promise<LearningPathEntity[]> {
+    return this.repo.find({ where: { userId }, withDeleted: true });
+  }
+
+  findByIdAndUserIdIncludingDeleted(
+    id: string,
+    userId: string,
+  ): Promise<LearningPathEntity | null> {
+    return this.repo.findOne({ where: { id, userId }, withDeleted: true });
+  }
+
   countActiveByUserId(userId: string): Promise<number> {
     return this.repo.count({ where: { userId, status: Not('archived') } });
   }
@@ -34,6 +47,10 @@ export class LearningPathTypeOrmRepository implements ILearningPathRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await this.repo.delete(id);
+    await this.repo.softDelete(id);
+  }
+
+  async restore(id: string): Promise<void> {
+    await this.repo.restore(id);
   }
 }

@@ -9,12 +9,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Request,
   Sse,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -40,9 +42,13 @@ export class PathsController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List all learning paths for the current user' })
+  @ApiQuery({ name: 'includeDeleted', required: false, type: Boolean })
   @ApiResponse({ status: 200, type: [PathListItemDto] })
-  listPaths(@Request() req: { user: JwtPayload }) {
-    return this.pathUseCase.list(req.user.sub);
+  listPaths(
+    @Request() req: { user: JwtPayload },
+    @Query('includeDeleted') includeDeleted?: string,
+  ) {
+    return this.pathUseCase.list(req.user.sub, includeDeleted === 'true');
   }
 
   @Post('generate')
@@ -112,6 +118,14 @@ export class PathsController {
   @ApiResponse({ status: 204 })
   deletePath(@Request() req: { user: JwtPayload }, @Param('id') id: string) {
     return this.pathUseCase.delete(id, req.user.sub);
+  }
+
+  @Post(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Restore a soft-deleted learning path' })
+  @ApiResponse({ status: 200, type: PathDetailDto })
+  restorePath(@Request() req: { user: JwtPayload }, @Param('id') id: string) {
+    return this.pathUseCase.restore(id, req.user.sub);
   }
 
   @Post(':pathId/tutor')

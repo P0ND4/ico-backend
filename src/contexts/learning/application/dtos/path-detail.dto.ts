@@ -5,4 +5,5 @@ import { ChapterSummaryDto } from './chapter-summary.dto';
 export class PathDetailDto extends PathListItemDto implements PathDetailType {
   topic!: string;
   chapters!: ChapterSummaryDto[];
+  declare deletedAt: string | null;
 }

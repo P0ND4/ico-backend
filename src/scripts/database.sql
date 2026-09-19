@@ -324,7 +324,8 @@ CREATE TABLE trn.learning_paths (
   total_xp          INTEGER      NOT NULL DEFAULT 0 CHECK (total_xp >= 0),
   earned_xp         INTEGER      NOT NULL DEFAULT 0 CHECK (earned_xp >= 0),
   created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-  updated_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+  updated_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  deleted_at        TIMESTAMPTZ  NULL
 );
 
 CREATE TRIGGER trg_trn_learning_paths_updated_at

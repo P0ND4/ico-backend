@@ -6,6 +6,11 @@ export interface ILearningPathRepository {
     id: string,
     userId: string,
   ): Promise<LearningPathEntity | null>;
+  findAllByUserIdIncludingDeleted(userId: string): Promise<LearningPathEntity[]>;
+  findByIdAndUserIdIncludingDeleted(
+    id: string,
+    userId: string,
+  ): Promise<LearningPathEntity | null>;
   countActiveByUserId(userId: string): Promise<number>;
   create(data: Partial<LearningPathEntity>): Promise<LearningPathEntity>;
   update(
@@ -13,4 +18,5 @@ export interface ILearningPathRepository {
     data: Partial<LearningPathEntity>,
   ): Promise<LearningPathEntity>;
   delete(id: string): Promise<void>;
+  restore(id: string): Promise<void>;
 }

@@ -14,6 +14,7 @@ import { seedXpLevels } from './xp-levels.seed';
 import { seedPomodoroPresets } from './pomodoro-presets.seed';
 import { seedAppSettings } from './app-settings.seed';
 import { seedSubscriptionPlans } from './subscription-plans.seed';
+import { seedCoupons } from './coupons.seed';
 
 @Injectable()
 export class SeederService implements OnApplicationBootstrap {
@@ -38,6 +39,8 @@ export class SeederService implements OnApplicationBootstrap {
       await seedPomodoroPresets(this.ds);
       await seedAppSettings(this.ds);
       await seedSubscriptionPlans(this.ds);
+      // After the plans: a plan_upgrade coupon references con.subscription_plans.
+      await seedCoupons(this.ds);
 
       this.logger.log('Seeder: done');
     } catch (err) {

@@ -21,17 +21,42 @@ export function resolveUserDeviceId(user: UserEntity): string | null {
   return user.deviceId ?? user.guestDeviceId ?? null;
 }
 
+/** Extra uses left over from redeemed coupons, per quota bucket. */
+export interface QuotaBonus {
+  tutorRemaining: number;
+  summaryRemaining: number;
+  standardPathRemaining: number;
+  deepPathRemaining: number;
+}
+
+export const EMPTY_QUOTA_BONUS: QuotaBonus = {
+  tutorRemaining: 0,
+  summaryRemaining: 0,
+  standardPathRemaining: 0,
+  deepPathRemaining: 0,
+};
+
 export function isDefaultFreePlan(
   plan: SubscriptionPlanEntity | null | undefined,
 ): boolean {
   return plan?.isDefaultFree === true;
 }
 
+/**
+ * VIP with an expiry date. A VIP grant whose `vipExpiresAt` already elapsed is
+ * rejected even if the row has not been normalized yet by the lazy write.
+ */
+export function isVipActive(user: UserEntity, now: Date = new Date()): boolean {
+  if (!user.isVip) return false;
+  return user.vipExpiresAt == null || user.vipExpiresAt > now;
+}
+
 export function hasUnlimitedPlanAccess(
   user: UserEntity,
   plan?: SubscriptionPlanEntity | null,
+  now: Date = new Date(),
 ): boolean {
-  return user.isVip || plan?.isUnlimited === true;
+  return isVipActive(user, now) || plan?.isUnlimited === true;
 }
 
 export function getFeatureLimit(
@@ -50,25 +75,58 @@ export function getPathLimit(
   return mode === 'standard' ? plan.maxStandardPaths : plan.maxDeepPaths;
 }
 
+/** NULL (unlimited) absorbs the bonus; a finite limit is topped up by it. */
+export function getEffectiveFeatureLimit(
+  plan: SubscriptionPlanEntity | null | undefined,
+  feature: PlanFeature,
+  bonus?: QuotaBonus | null,
+): number | null {
+  const limit = getFeatureLimit(plan, feature);
+  if (limit == null) return null;
+  const extra =
+    feature === 'tutor'
+      ? (bonus?.tutorRemaining ?? 0)
+      : (bonus?.summaryRemaining ?? 0);
+  return limit + Math.max(0, extra);
+}
+
+/** NULL (unlimited) absorbs the bonus; a finite limit is topped up by it. */
+export function getEffectivePathLimit(
+  plan: SubscriptionPlanEntity | null | undefined,
+  mode: PathMode,
+  bonus?: QuotaBonus | null,
+): number | null {
+  const limit = getPathLimit(plan, mode);
+  if (limit == null) return null;
+  const extra =
+    mode === 'standard'
+      ? (bonus?.standardPathRemaining ?? 0)
+      : (bonus?.deepPathRemaining ?? 0);
+  return limit + Math.max(0, extra);
+}
+
 export function getRemainingFromPlan(
   plan: SubscriptionPlanEntity | null | undefined,
   usage: TrialUsage,
+  bonus?: QuotaBonus | null,
 ): {
   tutorRemaining: number | null;
   summaryRemaining: number | null;
   standardPathRemaining: number | null;
   deepPathRemaining: number | null;
 } {
-  const tutorLimit = getFeatureLimit(plan, 'tutor');
-  const summaryLimit = getFeatureLimit(plan, 'summary');
-  const standardLimit = getPathLimit(plan, 'standard');
-  const deepLimit = getPathLimit(plan, 'deep');
+  const tutorLimit = getEffectiveFeatureLimit(plan, 'tutor', bonus);
+  const summaryLimit = getEffectiveFeatureLimit(plan, 'summary', bonus);
+  const standardLimit = getEffectivePathLimit(plan, 'standard', bonus);
+  const deepLimit = getEffectivePathLimit(plan, 'deep', bonus);
 
   return {
     tutorRemaining:
       tutorLimit == null ? null : Math.max(0, tutorLimit - usage.tutorUses),
     summaryRemaining:
-      summaryLimit == null ? null : Math.max(0, summaryLimit - usage.summaryUses),
+      summaryLimit == null
+        ? null
+        : Math.max(0, summaryLimit - usage.summaryUses),
     standardPathRemaining:
       standardLimit == null
         ? null
@@ -106,6 +164,7 @@ export function assertPlanFeature(
   plan: SubscriptionPlanEntity | null | undefined,
   feature: PlanFeature,
   trialUsage?: TrialUsage | null,
+  bonus?: QuotaBonus | null,
 ): void {
   if (hasUnlimitedPlanAccess(user, plan)) return;
 
@@ -113,7 +172,7 @@ export function assertPlanFeature(
     throw new ForbiddenPlanError('trial_exhausted');
   }
 
-  const limit = getFeatureLimit(plan, feature);
+  const limit = getEffectiveFeatureLimit(plan, feature, bonus);
   const usage = trialUsage ?? {
     tutorUses: 0,
     summaryUses: 0,
@@ -140,6 +199,7 @@ export function assertPathGeneration(
   plan: SubscriptionPlanEntity | null | undefined,
   mode: PathMode,
   trialUsage?: TrialUsage | null,
+  bonus?: QuotaBonus | null,
 ): void {
   if (hasUnlimitedPlanAccess(user, plan)) return;
 
@@ -147,7 +207,7 @@ export function assertPathGeneration(
     throw new ForbiddenPlanError('trial_exhausted');
   }
 
-  const limit = getPathLimit(plan, mode);
+  const limit = getEffectivePathLimit(plan, mode, bonus);
   const usage = trialUsage ?? {
     tutorUses: 0,
     summaryUses: 0,
@@ -158,10 +218,13 @@ export function assertPathGeneration(
   if (limit == null) return;
 
   if (limit === 0) {
-    throw new ForbiddenPlanError(mode === 'standard' ? 'standard_path' : 'deep_path');
+    throw new ForbiddenPlanError(
+      mode === 'standard' ? 'standard_path' : 'deep_path',
+    );
   }
 
-  const used = mode === 'standard' ? usage.standardPathUses : usage.deepPathUses;
+  const used =
+    mode === 'standard' ? usage.standardPathUses : usage.deepPathUses;
   if (used >= limit) {
     throw new ForbiddenPlanError(
       mode === 'standard'

@@ -28,6 +28,13 @@ export class UserProfileDto implements UserProfileType {
   deepPathLimit!: number | null;
   quotaRenewsAt!: Date | null;
   trialExhausted!: boolean;
+  vipExpiresAt!: Date | null;
+  planExpiresAt!: Date | null;
+  bonusTutorRemaining!: number;
+  bonusSummaryRemaining!: number;
+  bonusStandardPathRemaining!: number;
+  bonusDeepPathRemaining!: number;
+  hasQuotaBonus!: boolean;
   themeMode!: string;
   learningStyle!: string | null;
   coursePreferences!: string | null;

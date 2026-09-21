@@ -16,6 +16,7 @@ import { TutorModule } from 'src/contexts/tutor/infrastructure/main.module';
 import { ContentModule } from 'src/contexts/content/infrastructure/main.module';
 import { PlanningModule } from 'src/contexts/planning/infrastructure/main.module';
 import { CatalogContextModule } from 'src/contexts/catalog/infrastructure/main.module';
+import { CouponModule } from 'src/contexts/coupon/infrastructure/main.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RedisModule } from 'src/database/redis.module';
 import { SeederService } from 'src/app/seeds/seeder.service';
@@ -54,6 +55,7 @@ import { HealthController } from 'src/app/health/health.controller';
     ContentModule,
     PlanningModule,
     CatalogContextModule,
+    CouponModule,
     ScheduleModule.forRoot(),
   ],
   providers: [

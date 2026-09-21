@@ -1,4 +1,10 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { BaseEntity } from '../base.entity';
 import { XpLevelEntity } from '../config/xp-level.entity';
 
@@ -55,7 +61,29 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'boolean', name: 'is_vip', default: false })
   isVip!: boolean;
 
-  @Column({ type: 'varchar', length: 10, name: 'theme_mode', default: 'system' })
+  /** NULL while `isVip` = true means a permanent VIP grant. */
+  @Column({ type: 'timestamptz', name: 'vip_expires_at', nullable: true })
+  vipExpiresAt!: Date | null;
+
+  /** NULL means the current `planCode` does not expire. */
+  @Column({ type: 'timestamptz', name: 'plan_expires_at', nullable: true })
+  planExpiresAt!: Date | null;
+
+  /** Plan to fall back to when a coupon-granted `plan_upgrade` expires. */
+  @Column({
+    name: 'base_plan_code',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  basePlanCode!: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 10,
+    name: 'theme_mode',
+    default: 'system',
+  })
   themeMode!: string;
 
   @Column({ type: 'text', name: 'learning_style', nullable: true })

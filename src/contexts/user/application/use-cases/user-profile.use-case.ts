@@ -7,9 +7,9 @@ import { UserProfileDto } from '../dtos/user-profile.dto';
 import { UpdateProfileDto } from '../dtos/update-profile.dto';
 import { StatsDto } from '../dtos/stats.dto';
 import { UserNotFoundError } from '../../domain/errors/auth/index';
-import {
-  resolveTrialQuotaForProfile,
-} from 'src/contexts/shared/domain/utils/trial-usage.helper';
+import { resolveTrialQuotaForProfile } from 'src/contexts/shared/domain/utils/trial-usage.helper';
+import { resolveEffectiveAccess } from 'src/contexts/shared/domain/utils/access-expiry.helper';
+import { isVipActive } from 'src/contexts/shared/domain/utils/plan-guard';
 
 @Injectable()
 export class UserProfileUseCase implements IUserProfileUseCase {
@@ -25,7 +25,11 @@ export class UserProfileUseCase implements IUserProfileUseCase {
     const sorted = allLevels.sort((a, b) => a.minXp - b.minXp);
     const currentLvl = sorted.filter((l) => l.minXp <= user.xp).at(-1);
     const nextLvl = sorted.find((l) => l.minXp > user.xp);
-    return this.toDto(user, currentLvl?.minXp ?? 0, nextLvl?.minXp ?? (currentLvl?.maxXp ?? 500) + 1);
+    return this.toDto(
+      user,
+      currentLvl?.minXp ?? 0,
+      nextLvl?.minXp ?? (currentLvl?.maxXp ?? 500) + 1,
+    );
   }
 
   async updateMe(
@@ -36,9 +40,15 @@ export class UserProfileUseCase implements IUserProfileUseCase {
       ...(data.name !== undefined && { name: data.name }),
       ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
       ...(data.themeMode !== undefined && { themeMode: data.themeMode }),
-      ...(data.learningStyle !== undefined && { learningStyle: data.learningStyle }),
-      ...(data.coursePreferences !== undefined && { coursePreferences: data.coursePreferences }),
-      ...(data.learningNotes !== undefined && { learningNotes: data.learningNotes }),
+      ...(data.learningStyle !== undefined && {
+        learningStyle: data.learningStyle,
+      }),
+      ...(data.coursePreferences !== undefined && {
+        coursePreferences: data.coursePreferences,
+      }),
+      ...(data.learningNotes !== undefined && {
+        learningNotes: data.learningNotes,
+      }),
     });
     if (!user) throw new UserNotFoundError();
     return this.getMe(userId);
@@ -100,27 +110,37 @@ export class UserProfileUseCase implements IUserProfileUseCase {
     currentLevelMinXp: number,
     nextLevelMinXp: number,
   ): Promise<UserProfileDto> {
-    const plan = await this.uow.subscriptionPlans.findByCode(user.planCode ?? 'free');
-    const trialQuota = await resolveTrialQuotaForProfile(this.uow, user, plan);
+    // Lazily normalizes expired VIP / plan grants before reporting access.
+    const { user: effectiveUser, plan } = await resolveEffectiveAccess(
+      this.uow,
+      user,
+    );
+    const trialQuota = await resolveTrialQuotaForProfile(
+      this.uow,
+      effectiveUser,
+      plan,
+    );
+
+    const vipActive = isVipActive(effectiveUser);
 
     return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      xp: user.xp,
-      level: user.level,
-      streakDays: user.streakDays,
-      lastActiveAt: user.lastActiveAt,
+      id: effectiveUser.id,
+      name: effectiveUser.name,
+      email: effectiveUser.email,
+      avatarUrl: effectiveUser.avatarUrl,
+      xp: effectiveUser.xp,
+      level: effectiveUser.level,
+      streakDays: effectiveUser.streakDays,
+      lastActiveAt: effectiveUser.lastActiveAt,
       currentLevelMinXp,
       nextLevelMinXp,
-      planCode: user.planCode,
-      planLabel: plan?.label ?? user.planCode,
+      planCode: effectiveUser.planCode,
+      planLabel: plan?.label ?? effectiveUser.planCode,
       isDefaultFreePlan: plan?.isDefaultFree === true,
-      isUnlimitedPlan: user.isVip || plan?.isUnlimited === true,
+      isUnlimitedPlan: vipActive || plan?.isUnlimited === true,
       adsEnabled: plan?.adsEnabled ?? true,
-      isVip: user.isVip,
-      freeTrialUsed: user.freeTrialUsed,
+      isVip: vipActive,
+      freeTrialUsed: effectiveUser.freeTrialUsed,
       trialTutorRemaining: trialQuota.trialTutorRemaining,
       trialSummaryRemaining: trialQuota.trialSummaryRemaining,
       trialStandardPathRemaining: trialQuota.trialStandardPathRemaining,
@@ -131,10 +151,17 @@ export class UserProfileUseCase implements IUserProfileUseCase {
       deepPathLimit: trialQuota.deepPathLimit,
       quotaRenewsAt: trialQuota.quotaRenewsAt,
       trialExhausted: trialQuota.trialExhausted,
-      themeMode: user.themeMode,
-      learningStyle: user.learningStyle,
-      coursePreferences: user.coursePreferences,
-      learningNotes: user.learningNotes,
+      vipExpiresAt: vipActive ? effectiveUser.vipExpiresAt : null,
+      planExpiresAt: effectiveUser.planExpiresAt,
+      bonusTutorRemaining: trialQuota.bonusTutorRemaining,
+      bonusSummaryRemaining: trialQuota.bonusSummaryRemaining,
+      bonusStandardPathRemaining: trialQuota.bonusStandardPathRemaining,
+      bonusDeepPathRemaining: trialQuota.bonusDeepPathRemaining,
+      hasQuotaBonus: trialQuota.hasQuotaBonus,
+      themeMode: effectiveUser.themeMode,
+      learningStyle: effectiveUser.learningStyle,
+      coursePreferences: effectiveUser.coursePreferences,
+      learningNotes: effectiveUser.learningNotes,
     };
   }
 }

@@ -30,6 +30,9 @@ import { TutorMessageEntity } from 'src/contexts/shared/domain/entities/tutor/tu
 import { SummaryEntity } from 'src/contexts/shared/domain/entities/content/summary.entity';
 import { PlanTaskEntity } from 'src/contexts/shared/domain/entities/planning/plan-task.entity';
 import { PomodoroSessionEntity } from 'src/contexts/shared/domain/entities/planning/pomodoro-session.entity';
+import { CouponEntity } from 'src/contexts/shared/domain/entities/config/coupon.entity';
+import { CouponRedemptionEntity } from 'src/contexts/shared/domain/entities/auth/coupon-redemption.entity';
+import { UserQuotaBonusEntity } from 'src/contexts/shared/domain/entities/auth/user-quota-bonus.entity';
 
 export const ALL_ENTITIES = [
   UserEntity,
@@ -62,6 +65,9 @@ export const ALL_ENTITIES = [
   SummaryEntity,
   PlanTaskEntity,
   PomodoroSessionEntity,
+  CouponEntity,
+  CouponRedemptionEntity,
+  UserQuotaBonusEntity,
 ];
 
 export const databaseConfig = (
